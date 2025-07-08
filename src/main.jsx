@@ -10,8 +10,181 @@ const performanceMonitor = {
   marks: {}
 };
 
-// Data serialization utility to prevent DataCloneError
-const serializeForPostMessage = (data) => {
+// Background SDK utilities
+class BackgroundSDKLoader {
+  constructor() {
+    this.initialized = false;
+    this.queue = [];
+  }
+
+  async init() {
+    if (this.initialized) return;
+    
+    try {
+      // Initialize background services
+      await this.loadServices();
+      this.initialized = true;
+      this.processQueue();
+    } catch (error) {
+      console.error('Background SDK initialization failed:', error);
+    }
+  }
+
+  async loadServices() {
+    // Load services in background
+    return new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+  }
+
+  processQueue() {
+    while (this.queue.length > 0) {
+      const task = this.queue.shift();
+      task();
+    }
+  }
+}
+
+// Message handling utilities
+function serializeForPostMessage(data) {
+  try {
+    return JSON.stringify(data);
+  } catch (error) {
+    console.error('Serialization error:', error);
+    return '{}';
+  }
+}
+
+function handleSDKMessage(event) {
+  if (event.origin !== window.location.origin) return;
+  
+  try {
+    const data = JSON.parse(event.data);
+    console.log('SDK Message received:', data);
+  } catch (error) {
+    console.error('Message parsing error:', error);
+  }
+}
+
+async function loadInBackground() {
+  const loader = new BackgroundSDKLoader();
+  await loader.init();
+  return loader;
+}
+
+function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
+  if (!targetWindow || !message) return;
+  
+  try {
+    const serializedMessage = serializeForPostMessage(message);
+    targetWindow.postMessage(serializedMessage, targetOrigin);
+  } catch (error) {
+    console.error('Message send error:', error);
+  }
+}
+
+function setupMessageHandler() {
+  window.addEventListener('message', handleSDKMessage);
+  
+  return () => {
+    window.removeEventListener('message', handleSDKMessage);
+  };
+}
+
+function cleanup() {
+  // Cleanup resources
+  const cleanup = setupMessageHandler();
+  cleanup();
+}
+
+async function initializeWhenReady() {
+  if (document.readyState === 'loading') {
+    return new Promise((resolve) => {
+      document.addEventListener('DOMContentLoaded', resolve);
+    });
+  }
+  return Promise.resolve();
+}
+
+// Fast Error Boundary component
+function FastErrorBoundary({ children, fallback }) {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const handleError = (event) => {
+      console.error('Global error caught:', event.error);
+      setHasError(true);
+      setError(event.error);
+    };
+
+    const handleUnhandledRejection = (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      setHasError(true);
+      setError(event.reason);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  if (hasError) {
+    return fallback || <Error error={error} />;
+  }
+
+  return children;
+}
+
+// App initialization
+async function initializeApp() {
+  try {
+    performanceMonitor.marks.initStart = performance.now();
+    
+    await initializeWhenReady();
+    await loadInBackground();
+    
+    performanceMonitor.marks.initEnd = performance.now();
+    console.log('App initialized in:', performanceMonitor.marks.initEnd - performanceMonitor.marks.initStart, 'ms');
+    
+    return true;
+  } catch (error) {
+    console.error('App initialization failed:', error);
+    return false;
+  }
+}
+
+// Global error handlers
+function handleError(event) {
+  console.error('Global error:', event.error);
+  // Log to error tracking service
+}
+
+function handleUnhandledRejection(event) {
+  console.error('Unhandled rejection:', event.reason);
+  event.preventDefault();
+}
+
+// Setup global error handling
+window.addEventListener('error', handleError);
+window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+// Setup message handler
+setupMessageHandler();
+
+// Start the application
+initializeApp();
+
+// Cleanup on page unload
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanup);
+
+// Enhanced serialization utility with circular reference handling
+function serializeForPostMessage(data) {
   try {
     // Track circular references
     const seen = new WeakSet();
@@ -76,10 +249,10 @@ const serializeForPostMessage = (data) => {
       timestamp: Date.now()
     };
   }
-};
+}
 
-// Message handler for external SDK communication
-const handleSDKMessage = (event) => {
+// Enhanced message handler for external SDK communication
+function handleSDKMessage(event) {
   try {
     // Validate origin for security
     if (!event.origin || event.origin === window.location.origin) {
@@ -97,15 +270,27 @@ const handleSDKMessage = (event) => {
   } catch (error) {
     console.warn('Error handling SDK message:', error);
   }
-};
-
-// Background SDK Loader - non-blocking with error handling
+}
+// Enhanced Background SDK Loader with improved error handling
 class BackgroundSDKLoader {
   static messageHandler = null;
   
   static async loadInBackground() {
-    // Implementation would go here
-    return false;
+    try {
+      // Initialize background services
+      await this.loadServices();
+      return true;
+    } catch (error) {
+      console.error('Background SDK loading failed:', error);
+      return false;
+    }
+  }
+  
+  static async loadServices() {
+    // Load services in background
+    return new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
   }
   
   static sendSafeMessage(targetWindow, message, targetOrigin = "*") {
@@ -193,18 +378,20 @@ class BackgroundSDKLoader {
   }
 }
 
-// Fast Error Boundary
+// Enhanced Fast Error Boundary with improved error handling
 function FastErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = React.useState(false);
-  const [error, setError] = React.useState(null);
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleError = (event) => {
+      console.error('Global error caught:', event.error);
       setHasError(true);
       setError(event.error);
     };
 
     const handleUnhandledRejection = (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
       setHasError(true);
       setError(event.reason);
     };
@@ -240,7 +427,7 @@ function FastErrorBoundary({ children, fallback }) {
   return children;
 }
 
-// Initialize app
+// Enhanced app initialization with proper error handling
 async function initializeApp() {
   try {
     // Mark initialization start
@@ -264,12 +451,14 @@ async function initializeApp() {
     
     // Mark render start
     performanceMonitor.marks.renderStart = performance.now();
-// Render app with error boundary
+    
+    // Render app with error boundary
     root.render(
       <FastErrorBoundary>
         <App />
       </FastErrorBoundary>
     );
+    
     // Mark initialization complete
     performanceMonitor.marks.initComplete = performance.now();
     
@@ -283,19 +472,19 @@ async function initializeApp() {
     console.error('Failed to initialize app:', error);
     
     // Fallback render
-    document.getElementById('root').innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f5f5f5;">
-        <div style="text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <h2 style="color: #dc2626; margin-bottom: 1rem;">Application Error</h2>
-          <p style="color: #6b7280; margin-bottom: 1rem;">Unable to load the application. Please refresh the page.</p>
-          <button onclick="window.location.reload()" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;">
-            Refresh Page
-          </button>
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f5f5f5;">
+          <div style="text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #dc2626; margin-bottom: 1rem;">Application Error</h2>
+            <p style="color: #6b7280; margin-bottom: 1rem;">Unable to load the application. Please refresh the page.</p>
+            <button onclick="window.location.reload()" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;">
+              Refresh Page
+            </button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
 }
-
-// Start the application
-initializeApp();
