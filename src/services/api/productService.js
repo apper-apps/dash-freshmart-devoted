@@ -1764,6 +1764,8 @@ validCount: results.filter(r => r.isValid).length,
     }
   }
 
+}
+
 // Export an instantiated service instance instead of the class
 const productService = new ProductService();
 export default productService;
