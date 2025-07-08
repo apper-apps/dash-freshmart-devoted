@@ -110,5 +110,4 @@ export const {
   addNotification
 } = notificationSlice.actions;
 
-export { fetchNotificationCounts };
 export default notificationSlice.reducer;
