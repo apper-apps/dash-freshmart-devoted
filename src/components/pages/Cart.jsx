@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowRight, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router-dom";
-import { clearCart, removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
-import { addNotification } from "@/store/notificationSlice.jsx";
-import { selectCartItemCount, selectCartItems, selectCartTotal, validateCartPrices } from "@/store/cartSlice";
+import { toast } from 'react-toastify'
+import { Link, useNavigate } from 'react-router-dom'
+import { clearCart, removeFromCart, updateQuantity, selectCartItemCount, selectCartItems, selectCartTotal, validateCartPrices } from "@/store/cartSlice.js";
+import { addNotification } from "@/store/notificationSlice.js";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Empty from "@/components/ui/Empty";
