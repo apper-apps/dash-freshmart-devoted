@@ -123,6 +123,7 @@ async getById(id, userRole = 'customer') {
       product.id > max ? product.id : max, 0);
     return maxId + 1;
   }
+// Enhanced bulk update with proper payload structure handling
 async bulkUpdatePrices(updateData) {
     await this.delay(500); // Longer delay for bulk operations
     const validation = this.validateBulkPriceUpdate(updateData);
@@ -160,8 +161,9 @@ async bulkUpdatePrices(updateData) {
     let updatedCount = 0;
     const updateResults = [];
     const conflicts = [];
+    const priceChanges = [];
     
-    // Apply price updates
+    // Apply price updates with enhanced tracking
     filteredProducts.forEach(product => {
       const originalPrice = updateData.applyTo === 'cost_price' ? product.purchasePrice : product.price;
       let newPrice = originalPrice;
@@ -219,7 +221,9 @@ async bulkUpdatePrices(updateData) {
           
           this.products[productIndex] = {
             ...this.products[productIndex],
-            [updateField]: newPrice
+            [updateField]: newPrice,
+            bulkUpdateId: updateData.bulkUpdateId,
+            lastBulkUpdate: updateData.timestamp
           };
           
           // Update previous price for base price changes
@@ -234,12 +238,26 @@ async bulkUpdatePrices(updateData) {
             this.products[productIndex].profitMargin = ((price - cost) / cost * 100).toFixed(2);
           }
           
+          const changeAmount = newPrice - originalPrice;
+          const changeType = changeAmount > 0 ? 'increase' : 'decrease';
+          
+          priceChanges.push({
+            productId: product.id,
+            productName: product.name,
+            oldPrice: originalPrice,
+            newPrice: newPrice,
+            change: changeAmount,
+            changeType: changeType,
+            changePercentage: originalPrice > 0 ? ((changeAmount / originalPrice) * 100).toFixed(2) : 0,
+            field: updateField
+          });
+          
           updateResults.push({
             productId: product.id,
             productName: product.name,
             oldPrice: originalPrice,
             newPrice: newPrice,
-            change: newPrice - originalPrice,
+            change: changeAmount,
             field: updateField
           });
           
@@ -248,14 +266,26 @@ async bulkUpdatePrices(updateData) {
       }
     });
 
+    // Enhanced return payload with comprehensive bulk update data
     return {
+      success: true,
       updatedCount,
       totalFiltered: filteredProducts.length,
       strategy: updateData.strategy,
       applyTo: updateData.applyTo,
       conflicts,
+      priceChanges,
       updateResults: updateResults.slice(0, 10), // Return first 10 for reference
-      priceGuardsApplied: updateData.priceGuards?.enabled || false
+      priceGuardsApplied: updateData.priceGuards?.enabled || false,
+      bulkUpdateId: updateData.bulkUpdateId,
+      timestamp: updateData.timestamp,
+      summary: {
+        priceIncreases: priceChanges.filter(c => c.changeType === 'increase').length,
+        priceDecreases: priceChanges.filter(c => c.changeType === 'decrease').length,
+        averageChange: priceChanges.length > 0 ? 
+          (priceChanges.reduce((sum, c) => sum + c.change, 0) / priceChanges.length).toFixed(2) : 0,
+        totalValueChange: priceChanges.reduce((sum, c) => sum + c.change, 0).toFixed(2)
+      }
     };
   }
 

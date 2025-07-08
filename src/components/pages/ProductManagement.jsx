@@ -565,7 +565,7 @@ setFormData({
     setShowAddForm(false);
   };
 
-  // Handle bulk price update
+// Enhanced bulk price update with proper payload structure
   const handleBulkPriceUpdate = async (updateData) => {
     try {
       if (!updateData) {
@@ -573,8 +573,44 @@ setFormData({
         return;
       }
 
-      await productService.bulkUpdatePrices(updateData);
-      toast.success("Bulk price update completed successfully!");
+      // Enhanced payload structure for bulk updates
+      const bulkUpdatePayload = {
+        strategy: updateData.strategy,
+        value: updateData.value,
+        minPrice: updateData.minPrice,
+        maxPrice: updateData.maxPrice,
+        category: updateData.category,
+        applyTo: updateData.applyTo,
+        selectedRows: updateData.selectedRows,
+        applyToLowStock: updateData.applyToLowStock,
+        stockThreshold: updateData.stockThreshold,
+        priceGuards: updateData.priceGuards,
+        conflictResolution: updateData.conflictResolution,
+        activeTab: updateData.activeTab,
+        previewData: updateData.previewData || [],
+        timestamp: new Date().toISOString(),
+        bulkUpdateId: `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+
+      const result = await productService.bulkUpdatePrices(bulkUpdatePayload);
+      
+      // Enhanced success feedback with detailed results
+      if (result.updatedCount > 0) {
+        toast.success(`Bulk price update completed! ${result.updatedCount} products updated successfully.`);
+        
+        // Show conflicts if any
+        if (result.conflicts && result.conflicts.length > 0) {
+          toast.warning(`${result.conflicts.length} products had conflicts and were skipped.`);
+        }
+        
+        // Show price guard applications if any
+        if (result.priceGuardsApplied) {
+          toast.info("Price guards were applied to ensure valid pricing.");
+        }
+      } else {
+        toast.warning("No products were updated. Check your selection and try again.");
+      }
+      
       setShowBulkPriceModal(false);
       await loadProducts();
     } catch (err) {
@@ -2601,6 +2637,7 @@ const BulkUpdateSidebar = ({
   onSwitchToModal
 }) => {
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [previewHighlights, setPreviewHighlights] = useState(new Map());
 
   // Filter products based on search and category
   React.useEffect(() => {
@@ -2618,6 +2655,30 @@ const BulkUpdateSidebar = ({
     
     setFilteredProducts(filtered);
   }, [products, searchTerm, selectedCategory]);
+
+  // Update preview highlights when preview changes
+  React.useEffect(() => {
+    if (showPreview && preview.length > 0) {
+      const highlights = new Map();
+      
+      preview.forEach(previewProduct => {
+        const originalProduct = products.find(p => p.id === previewProduct.id);
+        if (originalProduct && previewProduct.newPrice !== originalProduct.price) {
+          const priceChange = previewProduct.newPrice - originalProduct.price;
+          highlights.set(previewProduct.id, {
+            type: priceChange > 0 ? 'increase' : 'decrease',
+            change: priceChange,
+            oldPrice: originalProduct.price,
+            newPrice: previewProduct.newPrice
+          });
+        }
+      });
+      
+      setPreviewHighlights(highlights);
+    } else {
+      setPreviewHighlights(new Map());
+    }
+  }, [showPreview, preview, products]);
 
   return (
     <div className="flex w-full h-full">
@@ -2971,24 +3032,30 @@ const BulkUpdateSidebar = ({
 
         {/* Product Table */}
         <div className="flex-1 overflow-auto">
+{/* Product Table */}
+        <div className="flex-1 overflow-auto">
           <ProductBulkUpdateTable
             products={filteredProducts}
             updateData={updateData}
             preview={preview}
             showPreview={showPreview}
+            previewHighlights={previewHighlights}
             onRowSelection={handleRowSelection}
             onSelectAll={handleSelectAll}
             onDeselectAll={handleDeselectAll}
           />
         </div>
 
-        {/* Preview Results */}
+        {/* Enhanced Preview Results with Delta Summary */}
         {showPreview && preview.length > 0 && (
           <div className="p-4 bg-gray-50 border-t border-gray-200">
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900">Preview Summary</h4>
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <ApperIcon name="Eye" size={16} />
+                <span>Preview Summary</span>
+              </h4>
               <p className="text-sm text-gray-600">
-                {preview.length} products will be updated
+                {preview.length} products will be updated with price changes
               </p>
             </div>
             
@@ -3005,6 +3072,9 @@ const BulkUpdateSidebar = ({
                   {preview.filter(p => p.priceChange > 0).length}
                 </div>
                 <div className="text-sm text-gray-600">Price Increases</div>
+                <div className="text-xs text-green-600 mt-1">
+                  ↑ {preview.filter(p => p.priceChange > 0).length > 0 ? 'Green Rows' : 'None'}
+                </div>
               </div>
               
               <div className="text-center">
@@ -3012,6 +3082,9 @@ const BulkUpdateSidebar = ({
                   {preview.filter(p => p.priceChange < 0).length}
                 </div>
                 <div className="text-sm text-gray-600">Price Decreases</div>
+                <div className="text-xs text-red-600 mt-1">
+                  ↓ {preview.filter(p => p.priceChange < 0).length > 0 ? 'Red Rows' : 'None'}
+                </div>
               </div>
               
               <div className="text-center">
@@ -3019,6 +3092,9 @@ const BulkUpdateSidebar = ({
                   {preview.filter(p => p.hasConflicts).length}
                 </div>
                 <div className="text-sm text-gray-600">Conflicts</div>
+                <div className="text-xs text-yellow-600 mt-1">
+                  ⚠ {preview.filter(p => p.hasConflicts).length > 0 ? 'Warning' : 'None'}
+                </div>
               </div>
             </div>
           </div>
@@ -3028,16 +3104,20 @@ const BulkUpdateSidebar = ({
   );
 };
 
-// Product Bulk Update Table Component
+// Enhanced Product Bulk Update Table Component with Row Highlighting
 const ProductBulkUpdateTable = ({
   products,
   updateData,
   preview,
   showPreview,
+  previewHighlights,
   onRowSelection,
   onSelectAll,
   onDeselectAll
 }) => {
+  const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
+  const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
+
   const handleSelectAllChange = (e) => {
     if (e.target.checked) {
       onSelectAll(products);
@@ -3045,9 +3125,6 @@ const ProductBulkUpdateTable = ({
       onDeselectAll();
     }
   };
-
-  const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
-  const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
 
   return (
     <div className="overflow-x-auto">
@@ -3093,11 +3170,31 @@ const ProductBulkUpdateTable = ({
           {products.map((product) => {
             const isSelected = updateData.selectedRows.has(product.id);
             const previewData = preview.find(p => p.id === product.id);
+            const highlight = previewHighlights?.get(product.id);
+            
+            // Enhanced row styling based on price changes
+            const getRowClassName = () => {
+              let baseClass = 'hover:bg-gray-50 transition-colors duration-200';
+              
+              if (isSelected) {
+                baseClass += ' bg-blue-50';
+              }
+              
+              if (showPreview && highlight) {
+                if (highlight.type === 'increase') {
+                  baseClass += ' bg-green-50 border-l-4 border-green-500';
+                } else if (highlight.type === 'decrease') {
+                  baseClass += ' bg-red-50 border-l-4 border-red-500';
+                }
+              }
+              
+              return baseClass;
+            };
             
             return (
               <tr 
                 key={product.id}
-                className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                className={getRowClassName()}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <input
@@ -3142,17 +3239,38 @@ const ProductBulkUpdateTable = ({
                 {showPreview && (
                   <>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Rs. {previewData?.newPrice || product.price || 0}
+                      <div className="flex items-center space-x-2">
+                        <span>Rs. {previewData?.newPrice || product.price || 0}</span>
+                        {highlight && (
+                          <ApperIcon 
+                            name={highlight.type === 'increase' ? 'TrendingUp' : 'TrendingDown'} 
+                            size={14} 
+                            className={highlight.type === 'increase' ? 'text-green-600' : 'text-red-600'}
+                          />
+                        )}
+                      </div>
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {previewData && (
-                        <span className={`${
-                          previewData.priceChange > 0 ? 'text-green-600' : 
-                          previewData.priceChange < 0 ? 'text-red-600' : 'text-gray-600'
-                        }`}>
-                          {previewData.priceChange > 0 ? '+' : ''}Rs. {previewData.priceChange || 0}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <Badge 
+                            variant={
+                              previewData.priceChange > 0 ? 'success' : 
+                              previewData.priceChange < 0 ? 'warning' : 'secondary'
+                            }
+                            className="text-xs font-medium"
+                          >
+                            {previewData.priceChange > 0 ? '+' : ''}Rs. {previewData.priceChange || 0}
+                          </Badge>
+                          {Math.abs(previewData.priceChange || 0) > 0 && (
+                            <div className="text-xs text-gray-500">
+                              {previewData.priceChange > 0 ? '↑' : '↓'} {
+                                Math.abs(((previewData.priceChange || 0) / (product.price || 1)) * 100).toFixed(1)
+                              }%
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                     
@@ -3177,7 +3295,10 @@ const ProductBulkUpdateTable = ({
   );
 };
 
-// Intelligent Image Upload System Component
+const ImageUploadSystem = ({
+  imageData, 
+  setImageData, 
+  onImageUpload,
 const ImageUploadSystem = ({
   imageData, 
   setImageData, 
