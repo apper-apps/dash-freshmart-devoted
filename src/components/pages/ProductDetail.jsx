@@ -6,8 +6,11 @@ import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import Loading from '@/components/ui/Loading';
 import Error from '@/components/ui/Error';
-import { productService } from '@/services/api/productService';
+import ProductService from '@/services/api/productService';
 import { useCart } from '@/hooks/useCart';
+
+// Initialize the product service
+const productService = new ProductService();
 
 const ProductDetail = () => {
   const { productId } = useParams();
