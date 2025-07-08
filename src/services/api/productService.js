@@ -299,10 +299,10 @@ validateBulkPriceUpdate(updateData) {
       }
       
       if (updateData.priceGuards.enforceMargin && updateData.priceGuards.minMargin < 0) {
+if (updateData.priceGuards.enforceMargin && updateData.priceGuards.minMargin < 0) {
         return { isValid: false, error: 'Minimum margin cannot be negative' };
       }
     }
-}
 
     return { isValid: true };
   }
