@@ -10,19 +10,23 @@ import Loading from "@/components/ui/Loading";
 import Cart from "@/components/pages/Cart";
 import ProductService from "@/services/api/productService";
 
-// Initialize the product service
-const productService = new ProductService();
-
+const productService = ProductService;
 
 const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  
+  const { productId } = useParams();
+  const navigate = useNavigate();
+  const { addToCart, loading: cartLoading } = useCart();
 
   useEffect(() => {
-    loadProduct();
+    if (productId) {
+      loadProduct();
+    }
   }, [productId]);
-
   const loadProduct = async () => {
     try {
       setLoading(true);
@@ -514,8 +518,8 @@ Add to Cart - Rs. {(calculateEffectivePrice(product, quantity) - calculateDealSa
             </div>
           </div>
         </div>
-      </div>
 </div>
+    </div>
   );
 };
 
