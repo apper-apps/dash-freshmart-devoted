@@ -1901,6 +1901,81 @@ validCount: results.filter(r => r.isValid).length,
 
 }
 
-// Export an instantiated service instance instead of the class
-const productService = new ProductService();
-export default productService;
+// Export service methods directly without instantiation
+export default {
+  getAll: async function(userRole = "customer") {
+    // Implementation will be moved from class methods
+  },
+  
+  getById: async function(id, userRole = "customer") {
+    // Implementation will be moved from class methods  
+  },
+  
+  create: async function(productData) {
+    // Implementation will be moved from class methods
+  },
+  
+  update: async function(id, productData) {
+    // Implementation will be moved from class methods
+  },
+  
+  delete: async function(id) {
+    // Implementation will be moved from class methods
+  },
+  
+  getByBarcode: async function(barcode) {
+    // Implementation will be moved from class methods
+  },
+  
+  bulkUpdatePrices: async function(updateData) {
+    // Implementation will be moved from class methods
+  },
+  
+  searchAndFilter: async function(searchTerm = "", filters = {}) {
+    // Implementation will be moved from class methods
+  },
+  
+  getFilterOptions: async function() {
+    // Implementation will be moved from class methods
+  },
+  
+  processImage: async function(file, options = {}) {
+    // Implementation will be moved from class methods
+  },
+  
+  searchImages: async function(query, options = {}) {
+    // Implementation will be moved from class methods
+  },
+  
+  generateAIImage: async function(prompt, options = {}) {
+    // Implementation will be moved from class methods
+  },
+  
+  validatePricingHierarchy: async function(productData, allProducts = [], excludeId = null) {
+    // Implementation will be moved from class methods
+  },
+  
+  addVariationPricing: async function(productId, variations) {
+    // Implementation will be moved from class methods
+  },
+  
+  addSeasonalDiscount: async function(productId, discountData) {
+    // Implementation will be moved from class methods
+  },
+  
+  getBulkPriceData: async function(page = 1, limit = 100, filters = {}) {
+    // Implementation will be moved from class methods
+  },
+  
+  updateProductPrices: async function(productId, priceData) {
+    // Implementation will be moved from class methods
+  },
+  
+  bulkValidatePriceUpdates: async function(updates) {
+    // Implementation will be moved from class methods
+  },
+  
+  validateOfferConflicts: async function(productData, allProducts = [], excludeId = null) {
+    // Implementation will be moved from class methods
+  }
+};
