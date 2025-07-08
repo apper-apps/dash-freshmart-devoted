@@ -1,20 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { notificationService } from "@/services/api/notificationService";
 
-// Async thunk for fetching notification counts
-export const fetchNotificationCounts = createAsyncThunk(
-  'notifications/fetchCounts',
-  async (_, { rejectWithValue }) => {
-    try {
-      const counts = await notificationService.getUnreadCounts();
-      return counts;
-    } catch (error) {
-      console.error('Failed to fetch notification counts:', error);
-      return rejectWithValue(error.message || 'Failed to fetch notification counts');
-    }
-  }
-);
-
 const initialState = {
   counts: {
     payments: 0,
@@ -27,10 +13,25 @@ const initialState = {
     delivery: 0,
     analytics: 0
   },
+  notifications: [],
   loading: false,
   error: null,
   lastUpdated: null
 };
+
+export const fetchNotificationCounts = createAsyncThunk(
+  'notifications/fetchCounts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await notificationService.getCounts();
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch notification counts:', error);
+      return rejectWithValue(error.message || 'Failed to fetch notification counts');
+    }
+  }
+);
+
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -46,7 +47,7 @@ const notificationSlice = createSlice({
         state.counts[key] = 0;
       }
     },
-setLoading: (state, action) => {
+    setLoading: (state, action) => {
       state.loading = action.payload;
     },
     setError: (state, action) => {
@@ -68,6 +69,16 @@ setLoading: (state, action) => {
         analytics: 0
       };
       state.lastUpdated = new Date().toISOString();
+    },
+    addNotification: (state, action) => {
+      const notification = {
+        id: Date.now().toString(),
+        message: action.payload.message,
+        type: action.payload.type || 'info',
+        timestamp: new Date().toISOString(),
+        ...action.payload
+      };
+      state.notifications.push(notification);
     }
   },
   extraReducers: (builder) => {
@@ -92,10 +103,12 @@ setLoading: (state, action) => {
 export const {
   updateCounts,
   resetCount,
-  resetAllCounts,
   setLoading,
   setError,
-  clearError
+  clearError,
+  resetAllCounts,
+  addNotification
 } = notificationSlice.actions;
 
+export { fetchNotificationCounts };
 export default notificationSlice.reducer;
