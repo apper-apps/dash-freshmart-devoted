@@ -10,7 +10,7 @@ import Loading from "@/components/ui/Loading";
 import Account from '@/components/pages/Account'
 import PaymentMethod from '@/components/molecules/PaymentMethod'
 import { orderService } from '@/services/api/orderService'
-import { productService } from '@/services/api/productService'
+import productService from '@/services/api/productService'
 import { paymentService } from '@/services/api/paymentService'
 
 // Service instances are already created in the service files
