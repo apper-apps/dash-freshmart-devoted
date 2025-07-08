@@ -15,8 +15,6 @@ const productService = new ProductService();
 
 
 const ProductDetail = () => {
-  // Use ProductService instance for API calls  
-  const productService = ProductService;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
