@@ -3,186 +3,13 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "@/App";
 import Error from "@/components/ui/Error";
+import FastErrorBoundary from "@/components/ui/FastErrorBoundary";
 
 // Performance monitoring
 const performanceMonitor = {
   start: performance.now(),
   marks: {}
 };
-
-// Background SDK utilities
-class BackgroundSDKLoader {
-  constructor() {
-    this.initialized = false;
-    this.queue = [];
-  }
-
-  async init() {
-    if (this.initialized) return;
-    
-    try {
-      // Initialize background services
-      await this.loadServices();
-      this.initialized = true;
-      this.processQueue();
-    } catch (error) {
-      console.error('Background SDK initialization failed:', error);
-    }
-  }
-
-  async loadServices() {
-    // Load services in background
-    return new Promise((resolve) => {
-      setTimeout(resolve, 100);
-    });
-  }
-
-  processQueue() {
-    while (this.queue.length > 0) {
-      const task = this.queue.shift();
-      task();
-    }
-  }
-}
-
-// Message handling utilities
-function serializeForPostMessage(data) {
-  try {
-    return JSON.stringify(data);
-  } catch (error) {
-    console.error('Serialization error:', error);
-    return '{}';
-  }
-}
-
-function handleSDKMessage(event) {
-  if (event.origin !== window.location.origin) return;
-  
-  try {
-    const data = JSON.parse(event.data);
-    console.log('SDK Message received:', data);
-  } catch (error) {
-    console.error('Message parsing error:', error);
-  }
-}
-
-async function loadInBackground() {
-  const loader = new BackgroundSDKLoader();
-  await loader.init();
-  return loader;
-}
-
-function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
-  if (!targetWindow || !message) return;
-  
-  try {
-    const serializedMessage = serializeForPostMessage(message);
-    targetWindow.postMessage(serializedMessage, targetOrigin);
-  } catch (error) {
-    console.error('Message send error:', error);
-  }
-}
-
-function setupMessageHandler() {
-  window.addEventListener('message', handleSDKMessage);
-  
-  return () => {
-    window.removeEventListener('message', handleSDKMessage);
-  };
-}
-
-function cleanup() {
-  // Cleanup resources
-  const cleanup = setupMessageHandler();
-  cleanup();
-}
-
-async function initializeWhenReady() {
-  if (document.readyState === 'loading') {
-    return new Promise((resolve) => {
-      document.addEventListener('DOMContentLoaded', resolve);
-    });
-  }
-  return Promise.resolve();
-}
-
-// Fast Error Boundary component
-function FastErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const handleError = (event) => {
-      console.error('Global error caught:', event.error);
-      setHasError(true);
-      setError(event.error);
-    };
-
-    const handleUnhandledRejection = (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      setHasError(true);
-      setError(event.reason);
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  if (hasError) {
-    return fallback || <Error error={error} />;
-  }
-
-  return children;
-}
-
-// App initialization
-async function initializeApp() {
-  try {
-    performanceMonitor.marks.initStart = performance.now();
-    
-    await initializeWhenReady();
-    await loadInBackground();
-    
-    performanceMonitor.marks.initEnd = performance.now();
-    console.log('App initialized in:', performanceMonitor.marks.initEnd - performanceMonitor.marks.initStart, 'ms');
-    
-    return true;
-  } catch (error) {
-    console.error('App initialization failed:', error);
-    return false;
-  }
-}
-
-// Global error handlers
-function handleError(event) {
-  console.error('Global error:', event.error);
-  // Log to error tracking service
-}
-
-function handleUnhandledRejection(event) {
-  console.error('Unhandled rejection:', event.reason);
-  event.preventDefault();
-}
-
-// Setup global error handling
-window.addEventListener('error', handleError);
-window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-// Setup message handler
-setupMessageHandler();
-
-// Start the application
-initializeApp();
-
-// Cleanup on page unload
-// Cleanup on page unload
-window.addEventListener('beforeunload', cleanup);
-
 // Enhanced serialization utility with circular reference handling
 function serializeForPostMessage(data) {
   try {
@@ -271,6 +98,7 @@ function handleSDKMessage(event) {
     console.warn('Error handling SDK message:', error);
   }
 }
+
 // Enhanced Background SDK Loader with improved error handling
 class BackgroundSDKLoader {
   static messageHandler = null;
@@ -358,75 +186,16 @@ class BackgroundSDKLoader {
     }
   }
   
-  static async initializeWhenReady() {
-    try {
-      if (window.apperSDK?.isInitialized) {
-        return true;
-      }
-      
-      // Try to initialize if available
-      if (window.apperSDK?.initialize) {
-        await window.apperSDK.initialize();
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.warn('SDK initialization failed:', error);
-      return false;
+static async initializeWhenReady() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      return new Promise((resolve) => {
+        document.addEventListener('DOMContentLoaded', resolve);
+      });
     }
+    return Promise.resolve();
   }
 }
-
-// Enhanced Fast Error Boundary with improved error handling
-function FastErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const handleError = (event) => {
-      console.error('Global error caught:', event.error);
-      setHasError(true);
-      setError(event.error);
-    };
-
-    const handleUnhandledRejection = (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      setHasError(true);
-      setError(event.reason);
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  if (hasError) {
-    return fallback || (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
-          <p className="text-gray-600 mb-4">
-            We're sorry, but there was an error loading the application.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return children;
-}
-
 // Enhanced app initialization with proper error handling
 async function initializeApp() {
   try {
@@ -488,3 +257,24 @@ async function initializeApp() {
     }
   }
 }
+
+// Setup global error handling
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection:', event.reason);
+  event.preventDefault();
+});
+
+// Setup message handler
+BackgroundSDKLoader.setupMessageHandler();
+
+// Start the application
+initializeApp();
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  BackgroundSDKLoader.cleanup();
+});
