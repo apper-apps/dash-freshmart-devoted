@@ -1,7 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { productService } from '@/services/api/productService';
+import ProductService from '@/services/api/productService';
 import { toast } from 'react-toastify';
 
+// Create instance of ProductService for use in async thunks
+const productService = new ProductService();
 const initialState = {
   items: [],
   total: 0,
