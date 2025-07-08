@@ -1,7 +1,4 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
-
 class ProductService {
   constructor() {
     this.products = [...productsData];
@@ -1598,9 +1595,8 @@ width: Math.min(targetDimensions.width, mainRegion.width + 100),
       results,
 validCount: results.filter(r => r.isValid).length,
       invalidCount: results.filter(r => !r.isValid).length
-    };
+};
   }
-}
 }
 
 // Export an instantiated service instance instead of the class
