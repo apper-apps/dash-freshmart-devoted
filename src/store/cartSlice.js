@@ -1,9 +1,12 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import ProductService from '@/services/api/productService';
-import { toast } from 'react-toastify';
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { toast } from "react-toastify";
+import React from "react";
+import Error from "@/components/ui/Error";
+import ProductService from "@/services/api/productService";
 
-// Create instance of ProductService for use in async thunks
-const productService = new ProductService();
+const productService = ProductService;
+
+// Initial state for cart
 const initialState = {
   items: [],
   total: 0,
@@ -17,7 +20,6 @@ const initialState = {
     appliedDeals: []
   }
 };
-
 // Deal types enum
 const DEAL_TYPES = {
   BOGO: 'BOGO',
@@ -431,8 +433,9 @@ export const {
   clearError,
   updatePricesFromValidation
 } = cartSlice.actions;
-
 // Export async thunks
+export { validateCartPrices, addToCartWithValidation, updateQuantityWithValidation };
+
 // Selectors
 export const selectCartItems = (state) => state.cart.items;
 export const selectCartTotal = (state) => state.cart.total;

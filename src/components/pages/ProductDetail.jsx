@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Badge from '@/components/atoms/Badge';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import ProductService from '@/services/api/productService';
-import { useCart } from '@/hooks/useCart';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useCart } from "@/hooks/useCart";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Cart from "@/components/pages/Cart";
+import ProductService from "@/services/api/productService";
 
 // Initialize the product service
 const productService = new ProductService();
 
+
 const ProductDetail = () => {
-  const { productId } = useParams();
-  const navigate = useNavigate();
-  const { addToCart, isLoading: cartLoading } = useCart();
-  const [product, setProduct] = useState(null);
+  // Use ProductService instance for API calls  
+  const productService = ProductService;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
