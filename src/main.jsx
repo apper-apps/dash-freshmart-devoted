@@ -99,115 +99,116 @@ function handleSDKMessage(event) {
   }
 }
 
-// Enhanced Background SDK Loader with improved error handling
-class BackgroundSDKLoader {
-  static messageHandler = null;
-  
-  static async loadInBackground() {
-    try {
-      // Initialize background services
-      await this.loadServices();
-      return true;
-    } catch (error) {
-      console.error('Background SDK loading failed:', error);
-      return false;
-    }
-  }
-  
-  static async loadServices() {
-    // Load services in background
-    return new Promise((resolve) => {
-      setTimeout(resolve, 100);
-    });
-  }
-  
-  static sendSafeMessage(targetWindow, message, targetOrigin = "*") {
-    if (!targetWindow || typeof targetWindow.postMessage !== 'function') {
-      console.warn('Invalid target window for postMessage');
-      return false;
-    }
+  class BackgroundSDKLoader {
+    static messageHandler = null;
     
-    try {
-      // Always serialize the message to prevent DataCloneError
-      const serializedMessage = serializeForPostMessage(message);
-      
-      if (serializedMessage) {
-        targetWindow.postMessage(serializedMessage, targetOrigin);
+static async loadInBackground() {
+      try {
+        await this.loadServices();
+        await this.initializeWhenReady();
         return true;
-      } else {
-        console.warn('Message serialization returned null, attempting fallback');
-        // Fallback: try sending a minimal message
-        targetWindow.postMessage({
-          __type: 'FallbackMessage',
-          originalMessageType: typeof message,
-          timestamp: Date.now(),
-          error: 'Original message could not be serialized'
-        }, targetOrigin);
+      } catch (error) {
+        console.error('Background SDK loading failed:', error);
         return false;
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      
-      // Last resort: try sending error notification
-      try {
-        targetWindow.postMessage({
-          __type: 'MessageError',
-          error: error.message,
-          timestamp: Date.now()
-        }, targetOrigin);
-      } catch (fallbackError) {
-        console.error('Even fallback message failed:', fallbackError);
-      }
-      
-      return false;
-    }
-  }
-  
-  static setupMessageHandler() {
-    if (typeof window === 'undefined' || this.messageHandler) {
-      return;
     }
     
-    this.messageHandler = (event) => {
-      try {
-        handleSDKMessage(event);
-      } catch (error) {
-        console.warn('Message handler error:', error);
-      }
-    };
-    
-    window.addEventListener('message', this.messageHandler);
-  }
-  
-  static cleanup() {
-    if (this.messageHandler && typeof window !== 'undefined') {
-      window.removeEventListener('message', this.messageHandler);
-      this.messageHandler = null;
-    }
-  }
-static async initializeWhenReady() {
-    // Wait for DOM to be ready
-    if (document.readyState === 'loading') {
+    static async loadServices() {
+      // Load services in background
       return new Promise((resolve) => {
-        document.addEventListener('DOMContentLoaded', resolve);
+        setTimeout(resolve, 100);
       });
     }
-    return Promise.resolve();
+    
+    static sendSafeMessage(targetWindow, message, targetOrigin = "*") {
+      if (!targetWindow || typeof targetWindow.postMessage !== 'function') {
+        console.warn('Invalid target window for postMessage');
+        return false;
+      }
+      
+      try {
+        // Always serialize the message to prevent DataCloneError
+        const serializedMessage = serializeForPostMessage(message);
+        
+        if (serializedMessage) {
+          targetWindow.postMessage(serializedMessage, targetOrigin);
+          return true;
+        } else {
+          console.warn('Message serialization returned null, attempting fallback');
+          // Fallback: try sending a minimal message
+          targetWindow.postMessage({
+            __type: 'FallbackMessage',
+            originalMessageType: typeof message,
+            timestamp: Date.now(),
+            error: 'Original message could not be serialized'
+          }, targetOrigin);
+          return false;
+        }
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        
+        // Last resort: try sending error notification
+        try {
+          targetWindow.postMessage({
+            __type: 'MessageError',
+            error: error.message,
+            timestamp: Date.now()
+          }, targetOrigin);
+        } catch (fallbackError) {
+          console.error('Even fallback message failed:', fallbackError);
+        }
+        
+        return false;
+      }
+    }
+    
+    static setupMessageHandler() {
+      if (typeof window === 'undefined' || this.messageHandler) {
+        return;
+      }
+      
+      this.messageHandler = (event) => {
+        try {
+          handleSDKMessage(event);
+        } catch (error) {
+          console.warn('Message handler error:', error);
+        }
+      };
+      
+      window.addEventListener('message', this.messageHandler);
+    }
+    
+    static cleanup() {
+      if (this.messageHandler && typeof window !== 'undefined') {
+        window.removeEventListener('message', this.messageHandler);
+        this.messageHandler = null;
+      }
+    }
+    
+    static async initializeWhenReady() {
+      // Wait for DOM to be ready
+      return new Promise((resolve) => {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', resolve);
+        } else {
+          resolve();
+        }
+      });
+    }
   }
-}
+
+// Enhanced app initialization with proper error handling
 // Enhanced app initialization with proper error handling
 async function initializeApp() {
   try {
     // Mark initialization start
     performanceMonitor.marks.initStart = performance.now();
     
-    // Load SDK in background (non-blocking)
-    BackgroundSDKLoader.loadInBackground().then(loaded => {
-      if (loaded) {
-        BackgroundSDKLoader.initializeWhenReady();
-      }
-    });
-
+    // Load background services
+    const loaded = await BackgroundSDKLoader.loadInBackground();
+    if (loaded) {
+      await BackgroundSDKLoader.initializeWhenReady();
+    }
     // Get root element
     const rootElement = document.getElementById('root');
     if (!rootElement) {

@@ -192,11 +192,11 @@ return (
                     </Suspense>
                   } />
                   <Route path="admin/payments" element={
-                    <Suspense fallback={<Loading type="page" />}>
+<Suspense fallback={<Loading type="page" />}>
                       <PaymentManagement />
                     </Suspense>
                   } />
-<Route path="admin/ai-generate" element={
+                  <Route path="admin/ai-generate" element={
                     <Suspense fallback={<Loading type="page" />}>
                       <AIGenerate />
                     </Suspense>
@@ -206,7 +206,7 @@ return (
                       <PayrollManagement />
                     </Suspense>
                   } />
-</Route>
+                </Route>
               </Routes>
             
             <ToastContainer
