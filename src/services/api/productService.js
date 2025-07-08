@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 class ProductService {
   constructor() {
@@ -127,23 +129,41 @@ async bulkUpdatePrices(updateData) {
     if (!validation.isValid) {
       throw new Error(validation.error);
     }
+    
     let filteredProducts = [...this.products];
     
-    // Filter by category
-    if (updateData.category !== 'all') {
-      filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
-    }
-    
-    // Filter by stock if enabled
-    if (updateData.applyToLowStock) {
-      filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
+    // Apply filtering based on updateData
+    if (updateData.applyTo === 'selected_rows' && updateData.selectedRows) {
+      const selectedIds = Array.from(updateData.selectedRows);
+      filteredProducts = filteredProducts.filter(p => selectedIds.includes(p.id));
+    } else if (updateData.applyTo === 'filtered_products') {
+      // Filter by category
+      if (updateData.category !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
+      }
+      
+      // Filter by stock if enabled
+      if (updateData.applyToLowStock) {
+        filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
+      }
+    } else {
+      // Default filtering for backward compatibility
+      if (updateData.category !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
+      }
+      
+      if (updateData.applyToLowStock) {
+        filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
+      }
     }
 
     let updatedCount = 0;
+    const updateResults = [];
+    const conflicts = [];
     
     // Apply price updates
     filteredProducts.forEach(product => {
-      const originalPrice = product.price;
+      const originalPrice = updateData.applyTo === 'cost_price' ? product.purchasePrice : product.price;
       let newPrice = originalPrice;
       
       switch (updateData.strategy) {
@@ -162,12 +182,30 @@ async bulkUpdatePrices(updateData) {
           break;
       }
 
-      // Apply min/max constraints if specified
-      if (updateData.minPrice && newPrice < parseFloat(updateData.minPrice)) {
-        newPrice = parseFloat(updateData.minPrice);
-      }
-      if (updateData.maxPrice && newPrice > parseFloat(updateData.maxPrice)) {
-        newPrice = parseFloat(updateData.maxPrice);
+      // Apply price guards if enabled
+      if (updateData.priceGuards && updateData.priceGuards.enabled) {
+        if (newPrice < updateData.priceGuards.minPrice) {
+          newPrice = updateData.priceGuards.minPrice;
+        }
+        if (newPrice > updateData.priceGuards.maxPrice) {
+          newPrice = updateData.priceGuards.maxPrice;
+        }
+        
+        // Check margin enforcement
+        if (updateData.priceGuards.enforceMargin && updateData.applyTo === 'base_price') {
+          const costPrice = product.purchasePrice || 0;
+          if (costPrice > 0) {
+            const minPriceForMargin = costPrice * (1 + updateData.priceGuards.minMargin / 100);
+            if (newPrice < minPriceForMargin) {
+              conflicts.push({
+                productId: product.id,
+                productName: product.name,
+                reason: `Price would violate minimum margin requirement (${updateData.priceGuards.minMargin}%)`
+              });
+              return; // Skip this product
+            }
+          }
+        }
       }
 
       // Round to 2 decimal places
@@ -177,11 +215,34 @@ async bulkUpdatePrices(updateData) {
       if (Math.abs(newPrice - originalPrice) > 0.01) {
         const productIndex = this.products.findIndex(p => p.id === product.id);
         if (productIndex !== -1) {
+          const updateField = updateData.applyTo === 'cost_price' ? 'purchasePrice' : 'price';
+          
           this.products[productIndex] = {
             ...this.products[productIndex],
-            previousPrice: originalPrice,
-            price: newPrice
+            [updateField]: newPrice
           };
+          
+          // Update previous price for base price changes
+          if (updateData.applyTo === 'base_price' || updateData.applyTo === 'filtered_products') {
+            this.products[productIndex].previousPrice = originalPrice;
+          }
+          
+          // Recalculate profit margin if both prices are available
+          if (this.products[productIndex].price && this.products[productIndex].purchasePrice) {
+            const price = this.products[productIndex].price;
+            const cost = this.products[productIndex].purchasePrice;
+            this.products[productIndex].profitMargin = ((price - cost) / cost * 100).toFixed(2);
+          }
+          
+          updateResults.push({
+            productId: product.id,
+            productName: product.name,
+            oldPrice: originalPrice,
+            newPrice: newPrice,
+            change: newPrice - originalPrice,
+            field: updateField
+          });
+          
           updatedCount++;
         }
       }
@@ -190,11 +251,15 @@ async bulkUpdatePrices(updateData) {
     return {
       updatedCount,
       totalFiltered: filteredProducts.length,
-      strategy: updateData.strategy
+      strategy: updateData.strategy,
+      applyTo: updateData.applyTo,
+      conflicts,
+      updateResults: updateResults.slice(0, 10), // Return first 10 for reference
+      priceGuardsApplied: updateData.priceGuards?.enabled || false
     };
   }
 
-  validateBulkPriceUpdate(updateData) {
+validateBulkPriceUpdate(updateData) {
     if (!updateData.strategy) {
       return { isValid: false, error: 'Update strategy is required' };
     }
@@ -215,8 +280,31 @@ async bulkUpdatePrices(updateData) {
       }
     }
 
+    // Validate Apply To selection
+    if (!updateData.applyTo) {
+      return { isValid: false, error: 'Apply To selection is required' };
+    }
+
+    // Validate selected rows if applying to selected rows
+    if (updateData.applyTo === 'selected_rows') {
+      if (!updateData.selectedRows || updateData.selectedRows.size === 0) {
+        return { isValid: false, error: 'No rows selected for update' };
+      }
+    }
+
+    // Validate price guards if enabled
+    if (updateData.priceGuards && updateData.priceGuards.enabled) {
+      if (updateData.priceGuards.minPrice >= updateData.priceGuards.maxPrice) {
+        return { isValid: false, error: 'Price guard minimum must be less than maximum' };
+      }
+      
+      if (updateData.priceGuards.enforceMargin && updateData.priceGuards.minMargin < 0) {
+        return { isValid: false, error: 'Minimum margin cannot be negative' };
+      }
+    }
+
     return { isValid: true };
-}
+  }
 
   delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -1596,8 +1684,85 @@ width: Math.min(targetDimensions.width, mainRegion.width + 100),
 validCount: results.filter(r => r.isValid).length,
       invalidCount: results.filter(r => !r.isValid).length
 };
-  }
 }
+  
+  // Enhanced offer conflict validation
+  async validateOfferConflicts(productData, allProducts = [], excludeId = null) {
+    try {
+      await this.delay(200);
+      
+      const conflicts = [];
+      const warnings = [];
+      
+      if (!productData) {
+        return { isValid: false, error: 'Invalid product data', conflicts, warnings };
+      }
+
+      const basePrice = parseFloat(productData.basePrice || productData.price) || 0;
+      const discountValue = parseFloat(productData.discountValue) || 0;
+      const discountType = productData.discountType || 'Fixed Amount';
+      const category = productData.category;
+
+      // Check for existing offers in the same category
+      if (discountValue > 0) {
+        const conflictingProducts = allProducts.filter(p => 
+          p && p.category === category && 
+          p.id !== excludeId && 
+          p.discountValue > 0
+        );
+
+        if (conflictingProducts.length > 0) {
+          warnings.push(`${conflictingProducts.length} other products in ${category} category have active offers`);
+        }
+      }
+
+      // Validate discount hierarchy
+      if (discountValue > 0) {
+        let finalPrice = basePrice;
+        
+        if (discountType === 'Percentage') {
+          finalPrice = basePrice * (1 - discountValue / 100);
+        } else {
+          finalPrice = basePrice - discountValue;
+        }
+
+        if (finalPrice <= 0) {
+          conflicts.push({
+            type: 'invalid_final_price',
+            details: 'Final price after discount cannot be zero or negative'
+          });
+        }
+
+        // Check minimum profit margin
+        const purchasePrice = parseFloat(productData.purchasePrice) || 0;
+        if (purchasePrice > 0) {
+          const margin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
+          if (margin < 5) {
+            conflicts.push({
+              type: 'low_profit_margin',
+              details: `Margin after discount is ${margin.toFixed(2)}% (minimum 5% recommended)`
+            });
+          }
+        }
+      }
+
+      return {
+        isValid: conflicts.length === 0,
+        conflicts,
+        warnings,
+        error: conflicts.length > 0 ? 'Offer conflicts detected' : null
+      };
+
+    } catch (error) {
+      console.error('Error validating offer conflicts:', error);
+      return {
+        isValid: false,
+        error: 'Failed to validate offer conflicts',
+        conflicts: [],
+        warnings: []
+      };
+    }
+  }
 
 // Export an instantiated service instance instead of the class
 const productService = new ProductService();

@@ -1690,15 +1690,14 @@ return matchesSearch && matchesCategory;
         </div>
       )}
 
-      {/* Bulk Price Update Modal */}
-{/* Enhanced Bulk Actions Modal */}
+{/* Enhanced Bulk Update Panel */}
       {showBulkPriceModal && (
-        <EnhancedBulkActionsModal
+        <BulkUpdatePanel
           products={products}
           categories={categories}
           onUpdate={handleBulkPriceUpdate}
           onClose={() => setShowBulkPriceModal(false)}
-/>
+        />
       )}
 
       {/* Bulk Price Manager Modal */}
@@ -1715,17 +1714,28 @@ return matchesSearch && matchesCategory;
   );
 };
 
-// Enhanced Bulk Actions Modal with Category Discounts and Validation
-const EnhancedBulkActionsModal = ({ products, categories, onUpdate, onClose }) => {
+// Enhanced Bulk Update Panel with Left Sidebar
+const BulkUpdatePanel = ({ products, categories, onUpdate, onClose }) => {
+  const [viewMode, setViewMode] = useState('sidebar'); // sidebar, modal
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('pricing'); // pricing, discounts, validation
-  const [updateData, setUpdateData] = useState({
-value: '',
-    minPrice: '',
+const [updateData, setUpdateData] = useState({
+    strategy: 'percentage',
+    value: '',
     minPrice: '',
     maxPrice: '',
     category: 'all',
+    applyTo: 'base_price', // base_price, cost_price, selected_rows, filtered_products
+    selectedRows: new Set(),
     applyToLowStock: false,
     stockThreshold: 10,
+    priceGuards: {
+      enabled: true,
+      minPrice: 1,
+      maxPrice: 100000,
+      enforceMargin: true,
+      minMargin: 5
+    },
     // Enhanced discount options
     discountType: 'percentage',
     discountValue: '',
@@ -1739,6 +1749,8 @@ value: '',
   const [showPreview, setShowPreview] = useState(false);
   const [validationResults, setValidationResults] = useState([]);
   const [conflictAnalysis, setConflictAnalysis] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1750,6 +1762,48 @@ value: '',
     setValidationResults([]);
   };
 
+  const handleNestedInputChange = (path, value) => {
+    setUpdateData(prev => {
+      const newData = { ...prev };
+      const keys = path.split('.');
+      let current = newData;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        current = current[keys[i]];
+      }
+      
+      current[keys[keys.length - 1]] = value;
+      return newData;
+    });
+    setShowPreview(false);
+  };
+
+  const handleRowSelection = (productId, selected) => {
+    setUpdateData(prev => {
+      const newSelected = new Set(prev.selectedRows);
+      if (selected) {
+        newSelected.add(productId);
+      } else {
+        newSelected.delete(productId);
+      }
+      return { ...prev, selectedRows: newSelected };
+    });
+  };
+
+  const handleSelectAll = (products) => {
+    setUpdateData(prev => ({
+      ...prev,
+      selectedRows: new Set(products.map(p => p.id))
+    }));
+  };
+
+  const handleDeselectAll = () => {
+    setUpdateData(prev => ({
+      ...prev,
+      selectedRows: new Set()
+    }));
+  };
+
   // Enhanced validation with conflict detection
   const runValidation = async () => {
     try {
@@ -1757,7 +1811,6 @@ value: '',
         toast.error('No products available for validation');
         return;
       }
-
       let filteredProducts = [...products];
       
       // Filter by category
@@ -1957,46 +2010,90 @@ value: '',
       toast.error('Failed to process bulk update');
     }
   };
+return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex z-50">
+      {viewMode === 'sidebar' ? (
+        <BulkUpdateSidebar
+          products={products}
+          categories={categories}
+          updateData={updateData}
+          setUpdateData={setUpdateData}
+          preview={preview}
+          setPreview={setPreview}
+          showPreview={showPreview}
+          setShowPreview={setShowPreview}
+          validationResults={validationResults}
+          setValidationResults={setValidationResults}
+          conflictAnalysis={conflictAnalysis}
+          setConflictAnalysis={setConflictAnalysis}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          handleInputChange={handleInputChange}
+          handleNestedInputChange={handleNestedInputChange}
+          handleRowSelection={handleRowSelection}
+          handleSelectAll={handleSelectAll}
+          handleDeselectAll={handleDeselectAll}
+          runValidation={runValidation}
+          generatePreview={generatePreview}
+          handleSubmit={handleSubmit}
+          onClose={onClose}
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onSwitchToModal={() => setViewMode('modal')}
+        />
+      ) : (
+        <div className="flex items-center justify-center w-full p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-900">Enhanced Bulk Actions & Validation</h2>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('sidebar')}
+                    className="text-blue-600"
+                  >
+                    Switch to Sidebar
+                  </Button>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+<ApperIcon name="X" size={24} />
+                  </button>
+                </div>
+              </div>
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900">Enhanced Bulk Actions & Validation</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <ApperIcon name="X" size={24} />
-            </button>
-          </div>
+              {/* Tab Navigation */}
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
+                {[
+                  { id: 'pricing', label: 'Price Updates', icon: 'DollarSign' },
+                  { id: 'discounts', label: 'Category Discounts', icon: 'Tag' },
+                  { id: 'validation', label: 'Conflict Detection', icon: 'Shield' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <ApperIcon name={tab.icon} size={16} />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mt-4">
-            {[
-              { id: 'pricing', label: 'Price Updates', icon: 'DollarSign' },
-              { id: 'discounts', label: 'Category Discounts', icon: 'Tag' },
-              { id: 'validation', label: 'Conflict Detection', icon: 'Shield' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <ApperIcon name={tab.icon} size={16} />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Price Updates Tab */}
           {activeTab === 'pricing' && (
             <div className="space-y-6">
@@ -2463,7 +2560,619 @@ value: '',
             </Button>
           </div>
 </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bulk Update Sidebar Component
+const BulkUpdateSidebar = ({
+  products,
+  categories,
+  updateData,
+  setUpdateData,
+  preview,
+  setPreview,
+  showPreview,
+  setShowPreview,
+  validationResults,
+  setValidationResults,
+  conflictAnalysis,
+  setConflictAnalysis,
+  searchTerm,
+  setSearchTerm,
+  selectedCategory,
+  setSelectedCategory,
+  handleInputChange,
+  handleNestedInputChange,
+  handleRowSelection,
+  handleSelectAll,
+  handleDeselectAll,
+  runValidation,
+  generatePreview,
+  handleSubmit,
+  onClose,
+  sidebarCollapsed,
+  setSidebarCollapsed,
+  activeTab,
+  setActiveTab,
+  onSwitchToModal
+}) => {
+  const [filteredProducts, setFilteredProducts] = useState([]);
+
+  // Filter products based on search and category
+  React.useEffect(() => {
+    let filtered = products.filter(product => {
+      if (!product) return false;
+      
+      const matchesSearch = !searchTerm || 
+        (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.barcode && product.barcode.includes(searchTerm));
+      
+      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+    
+    setFilteredProducts(filtered);
+  }, [products, searchTerm, selectedCategory]);
+
+  return (
+    <div className="flex w-full h-full">
+      {/* Left Sidebar Panel */}
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-96'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            {!sidebarCollapsed && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Bulk Update Panel</h2>
+                <p className="text-sm text-gray-600">Configure bulk price updates</p>
+              </div>
+            )}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ApperIcon name={sidebarCollapsed ? "ChevronRight" : "ChevronLeft"} size={20} />
+              </button>
+              {!sidebarCollapsed && (
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <ApperIcon name="X" size={20} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar Content */}
+        {!sidebarCollapsed && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Update Strategy Section */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="TrendingUp" size={16} className="text-primary" />
+                <h3 className="font-medium text-gray-900">Update Strategy</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="strategy"
+                    value="percentage"
+                    checked={updateData.strategy === 'percentage'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Percentage Change</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="strategy"
+                    value="fixed"
+                    checked={updateData.strategy === 'fixed'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Fixed Amount</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="strategy"
+                    value="range"
+                    checked={updateData.strategy === 'range'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Price Range</label>
+                </div>
+              </div>
+
+              {/* Strategy Value Input */}
+              {updateData.strategy === 'percentage' && (
+                <Input
+                  label="Percentage Change (%)"
+                  name="value"
+                  type="number"
+                  step="0.1"
+                  value={updateData.value}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 10 for 10% increase"
+                  icon="Percent"
+                />
+              )}
+              
+              {updateData.strategy === 'fixed' && (
+                <Input
+                  label="Fixed Amount (Rs.)"
+                  name="value"
+                  type="number"
+                  step="0.01"
+                  value={updateData.value}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 50 to add Rs. 50"
+                  icon="DollarSign"
+                />
+              )}
+
+              {updateData.strategy === 'range' && (
+                <div className="space-y-3">
+                  <Input
+                    label="Minimum Price (Rs.)"
+                    name="minPrice"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    value={updateData.minPrice}
+                    onChange={handleInputChange}
+                    icon="TrendingDown"
+                  />
+                  <Input
+                    label="Maximum Price (Rs.)"
+                    name="maxPrice"
+                    type="number"
+                    step="0.01"
+                    max="100000"
+                    value={updateData.maxPrice}
+                    onChange={handleInputChange}
+                    icon="TrendingUp"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Apply To Section */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="Target" size={16} className="text-primary" />
+                <h3 className="font-medium text-gray-900">Apply To</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="applyTo"
+                    value="base_price"
+                    checked={updateData.applyTo === 'base_price'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Base Price</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="applyTo"
+                    value="cost_price"
+                    checked={updateData.applyTo === 'cost_price'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Cost Price</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="applyTo"
+                    value="selected_rows"
+                    checked={updateData.applyTo === 'selected_rows'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Selected Rows ({updateData.selectedRows.size})</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="applyTo"
+                    value="filtered_products"
+                    checked={updateData.applyTo === 'filtered_products'}
+                    onChange={handleInputChange}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Filtered Products ({filteredProducts.length})</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Price Guards Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ApperIcon name="Shield" size={16} className="text-primary" />
+                  <h3 className="font-medium text-gray-900">Price Guards</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={updateData.priceGuards.enabled}
+                    onChange={(e) => handleNestedInputChange('priceGuards.enabled', e.target.checked)}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Enabled</label>
+                </div>
+              </div>
+
+              {updateData.priceGuards.enabled && (
+                <div className="space-y-3">
+                  <Input
+                    label="Min Price (Rs.)"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    value={updateData.priceGuards.minPrice}
+                    onChange={(e) => handleNestedInputChange('priceGuards.minPrice', parseFloat(e.target.value) || 1)}
+                    icon="TrendingDown"
+                  />
+                  <Input
+                    label="Max Price (Rs.)"
+                    type="number"
+                    step="0.01"
+                    max="100000"
+                    value={updateData.priceGuards.maxPrice}
+                    onChange={(e) => handleNestedInputChange('priceGuards.maxPrice', parseFloat(e.target.value) || 100000)}
+                    icon="TrendingUp"
+                  />
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={updateData.priceGuards.enforceMargin}
+                      onChange={(e) => handleNestedInputChange('priceGuards.enforceMargin', e.target.checked)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <label className="text-sm text-gray-700">Enforce Min Margin</label>
+                  </div>
+                  
+                  {updateData.priceGuards.enforceMargin && (
+                    <Input
+                      label="Min Margin (%)"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={updateData.priceGuards.minMargin}
+                      onChange={(e) => handleNestedInputChange('priceGuards.minMargin', parseFloat(e.target.value) || 5)}
+                      icon="Percent"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="Filter" size={16} className="text-primary" />
+                <h3 className="font-medium text-gray-900">Category Filter</h3>
+              </div>
+              
+              <div className="space-y-2">
+                <select
+                  value={updateData.category}
+                  onChange={handleInputChange}
+                  name="category"
+                  className="input-field text-sm"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="secondary"
+                icon="Eye"
+                onClick={generatePreview}
+                className="w-full"
+                disabled={
+                  (updateData.strategy !== 'range' && !updateData.value) ||
+                  (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice))
+                }
+              >
+                Preview Changes
+              </Button>
+              
+              <Button
+                type="button"
+                variant="primary"
+                icon="Save"
+                onClick={handleSubmit}
+                className="w-full"
+                disabled={!showPreview || preview.length === 0}
+              >
+                Apply Updates ({preview.length})
+              </Button>
+            </div>
+
+            {/* Switch to Modal */}
+            <div className="pt-4 border-t border-gray-200">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onSwitchToModal}
+                className="w-full text-blue-600"
+              >
+                Switch to Modal View
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Content Header */}
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Product List ({filteredProducts.length})
+            </h3>
+            <div className="flex items-center space-x-4">
+              {/* Search */}
+              <div className="relative">
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  icon="Search"
+                  className="w-64"
+                />
+              </div>
+              
+              {/* Category Filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field w-48"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Table */}
+        <div className="flex-1 overflow-auto">
+          <ProductBulkUpdateTable
+            products={filteredProducts}
+            updateData={updateData}
+            preview={preview}
+            showPreview={showPreview}
+            onRowSelection={handleRowSelection}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+          />
+        </div>
+
+        {/* Preview Results */}
+        {showPreview && preview.length > 0 && (
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="mb-4">
+              <h4 className="font-medium text-gray-900">Preview Summary</h4>
+              <p className="text-sm text-gray-600">
+                {preview.length} products will be updated
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {preview.length}
+                </div>
+                <div className="text-sm text-gray-600">Total Updates</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {preview.filter(p => p.priceChange > 0).length}
+                </div>
+                <div className="text-sm text-gray-600">Price Increases</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {preview.filter(p => p.priceChange < 0).length}
+                </div>
+                <div className="text-sm text-gray-600">Price Decreases</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {preview.filter(p => p.hasConflicts).length}
+                </div>
+                <div className="text-sm text-gray-600">Conflicts</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Product Bulk Update Table Component
+const ProductBulkUpdateTable = ({
+  products,
+  updateData,
+  preview,
+  showPreview,
+  onRowSelection,
+  onSelectAll,
+  onDeselectAll
+}) => {
+  const handleSelectAllChange = (e) => {
+    if (e.target.checked) {
+      onSelectAll(products);
+    } else {
+      onDeselectAll();
+    }
+  };
+
+  const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
+  const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={input => {
+                  if (input) input.indeterminate = isIndeterminate;
+                }}
+                onChange={handleSelectAllChange}
+                className="text-primary focus:ring-primary"
+              />
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Product
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Current Price
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Cost Price
+            </th>
+            {showPreview && (
+              <>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  New Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Change
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </>
+            )}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {products.map((product) => {
+            const isSelected = updateData.selectedRows.has(product.id);
+            const previewData = preview.find(p => p.id === product.id);
+            
+            return (
+              <tr 
+                key={product.id}
+                className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => onRowSelection(product.id, e.target.checked)}
+                    className="text-primary focus:ring-primary"
+                  />
+                </td>
+                
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 flex-shrink-0">
+                      <img
+                        className="h-8 w-8 rounded-full object-cover"
+                        src={product.imageUrl || "/api/placeholder/32/32"}
+                        alt={product.name}
+                        onError={(e) => {
+                          e.target.src = "/api/placeholder/32/32";
+                        }}
+                      />
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {product.name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {product.category}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  Rs. {product.price || 0}
+                </td>
+                
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  Rs. {product.purchasePrice || 0}
+                </td>
+                
+                {showPreview && (
+                  <>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Rs. {previewData?.newPrice || product.price || 0}
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {previewData && (
+                        <span className={`${
+                          previewData.priceChange > 0 ? 'text-green-600' : 
+                          previewData.priceChange < 0 ? 'text-red-600' : 'text-gray-600'
+                        }`}>
+                          {previewData.priceChange > 0 ? '+' : ''}Rs. {previewData.priceChange || 0}
+                        </span>
+                      )}
+                    </td>
+                    
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {previewData && (
+                        <Badge 
+                          variant={previewData.hasConflicts ? "warning" : "success"}
+                          className="text-xs"
+                        >
+                          {previewData.hasConflicts ? 'Conflict' : 'Ready'}
+                        </Badge>
+                      )}
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -4063,7 +4772,7 @@ const PreviewMode = ({
 
 {/* Bulk Price Update Modal */}
       {showBulkPriceModal && (
-        <EnhancedBulkActionsModal
+        <BulkUpdatePanel
           products={products}
           categories={categories}
           onUpdate={handleBulkPriceUpdate}
