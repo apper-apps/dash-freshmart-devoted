@@ -1,18 +1,23 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchNotificationCounts, updateCounts, resetCount, setLoading, setError } from "@/store/notificationSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { store } from "@/store/index";
+import { fetchNotificationCounts, resetCount, setError, setLoading, updateCounts } from "@/store/notificationSlice";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import Orders from "@/components/pages/Orders";
 import { orderService } from "@/services/api/orderService";
-import { productService } from "@/services/api/productService";
-import { paymentService } from "@/services/api/paymentService";
+import ProductService from "@/services/api/productService";
 import { notificationService } from "@/services/api/notificationService";
+import { paymentService } from "@/services/api/paymentService";
+
+// Create service instances
+const productService = new ProductService();
+
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const notificationCounts = useSelector(state => state.notifications.counts);
@@ -35,6 +40,7 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [revenueBreakdown, setRevenueBreakdown] = useState([]);
   const pollingRef = useRef(null);
+  
   const loadDashboardData = async () => {
     setLoading(true);
     try {
