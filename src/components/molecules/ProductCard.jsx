@@ -2,13 +2,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, Tag } from "lucide-react";
 import { toast } from "react-toastify";
-import { addToCart, removeFromCart, updateQuantity, selectCartLoading, setLoading } from "@/store/cartSlice.jsx";
-import { addNotification } from "@/store/notificationSlice.jsx";
+import { addToCart, removeFromCart, updateQuantity, selectCartLoading, setLoading } from "@/store/cartSlice.js";
+import { addNotification } from "@/store/notificationSlice.js";
 import { useNavigate } from "react-router-dom";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
-
 const ProductCard = React.memo(({ product }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
