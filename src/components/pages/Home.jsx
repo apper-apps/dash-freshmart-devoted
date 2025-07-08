@@ -4,13 +4,14 @@ import ApperIcon from "@/components/ApperIcon";
 import ProductGrid from "@/components/organisms/ProductGrid";
 import Button from "@/components/atoms/Button";
 import Category from "@/components/pages/Category";
-import { productService } from "@/services/api/productService";
+import ProductService from "@/services/api/productService";
 
-const Home = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+const productService = new ProductService();
+
+function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [featuredProducts, setFeaturedProducts] = useState([]);
 useEffect(() => {
     loadFeaturedProducts();
     
