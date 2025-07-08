@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 class ProductService {
   constructor() {
@@ -290,12 +292,13 @@ validateBulkPriceUpdate(updateData) {
       }
     }
 
-    // Validate price guards if enabled
+// Validate price guards if enabled
     if (updateData.priceGuards && updateData.priceGuards.enabled) {
       if (updateData.priceGuards.minPrice >= updateData.priceGuards.maxPrice) {
         return { isValid: false, error: 'Price guard minimum must be less than maximum' };
       }
-return { isValid: false, error: 'Minimum margin cannot be negative' };
+      if (updateData.priceGuards.minMargin < 0) {
+        return { isValid: false, error: 'Minimum margin cannot be negative' };
       }
     }
 
@@ -879,8 +882,7 @@ height = targetHeight;
     return { width: Math.round(width), height: Math.round(height) };
   }
   
-  // Get dynamic image dimensions for frame compatibility
-  getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
+// Get dynamic image dimensions for frame compatibility
   getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
     try {
       // Base size calculation with responsive scaling
