@@ -17,7 +17,24 @@ class NotificationService {
     this.counts = { ...mockNotificationCounts };
     this.lastUpdate = new Date().toISOString();
   }
+// Primary method expected by notification slice
+  async getCounts() {
+    await this.delay();
+    
+    // Simulate real-time changes by occasionally updating counts
+    if (Math.random() > 0.7) {
+      this.simulateCountChanges();
+    }
+    
+    return {
+      data: {
+        ...this.counts,
+        lastUpdated: this.lastUpdate
+      }
+    };
+  }
 
+  // Legacy method for backward compatibility
   async getUnreadCounts() {
     await this.delay();
     
@@ -31,7 +48,6 @@ class NotificationService {
       lastUpdated: this.lastUpdate
     };
   }
-
   async markAsRead(category) {
     await this.delay(200);
     
