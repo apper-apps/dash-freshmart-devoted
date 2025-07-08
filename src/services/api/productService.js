@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 class ProductService {
@@ -1599,5 +1601,8 @@ validCount: results.filter(r => r.isValid).length,
     };
   }
 }
+}
 
-export default ProductService;
+// Export an instantiated service instance instead of the class
+const productService = new ProductService();
+export default productService;
