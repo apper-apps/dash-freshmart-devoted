@@ -302,14 +302,127 @@ validateBulkPriceUpdate(updateData) {
         return { isValid: false, error: 'Minimum margin cannot be negative' };
       }
     }
+}
 
     return { isValid: true };
   }
+  // Enhanced product filtering with comprehensive search and filter support
+  async searchAndFilter(searchTerm = '', filters = {}) {
+    await this.delay(200);
+    
+    try {
+      let results = [...this.products];
+      
+      // Apply search term filter
+      if (searchTerm.trim()) {
+        const search = searchTerm.toLowerCase();
+        results = results.filter(product => 
+          product.name.toLowerCase().includes(search) ||
+          product.category.toLowerCase().includes(search) ||
+          (product.barcode && product.barcode.includes(search)) ||
+          (product.description && product.description.toLowerCase().includes(search))
+        );
+      }
+      
+      // Apply category filter
+      if (filters.category && filters.category !== 'All') {
+        results = results.filter(product => product.category === filters.category);
+      }
+      
+      // Apply price range filter
+      if (filters.priceRange) {
+        const { min, max } = filters.priceRange;
+        if (min !== '' && !isNaN(parseFloat(min))) {
+          results = results.filter(product => product.price >= parseFloat(min));
+        }
+        if (max !== '' && !isNaN(parseFloat(max))) {
+          results = results.filter(product => product.price <= parseFloat(max));
+        }
+      }
+      
+      // Apply stock filter
+      if (filters.inStock) {
+        results = results.filter(product => product.stock > 0);
+      }
+      
+      // Apply sorting
+      if (filters.sortBy) {
+        results.sort((a, b) => {
+          switch (filters.sortBy) {
+            case 'name':
+              return a.name.localeCompare(b.name);
+            case 'name-desc':
+              return b.name.localeCompare(a.name);
+            case 'price-low':
+              return a.price - b.price;
+            case 'price-high':
+              return b.price - a.price;
+            case 'stock':
+              return b.stock - a.stock;
+            default:
+              return a.name.localeCompare(b.name);
+          }
+        });
+      }
+      
+      return {
+        products: results,
+        totalCount: results.length,
+        appliedFilters: {
+          searchTerm,
+          ...filters
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error in searchAndFilter:', error);
+      throw new Error('Failed to search and filter products');
+    }
+  }
 
-  delay(ms = 150) { // Reduced delay for faster perceived performance
+  // Get available filter options based on current products
+  async getFilterOptions() {
+    await this.delay(100);
+    
+    try {
+      const categories = [...new Set(this.products.map(p => p.category))].sort();
+      const priceRange = this.products.reduce((range, product) => {
+        const price = product.price || 0;
+        return {
+          min: Math.min(range.min, price),
+          max: Math.max(range.max, price)
+        };
+      }, { min: Infinity, max: -Infinity });
+      
+      return {
+        categories: ['All', ...categories],
+        priceRange: {
+          min: Math.floor(priceRange.min),
+          max: Math.ceil(priceRange.max)
+        },
+        sortOptions: [
+          { value: 'name', label: 'Name (A-Z)' },
+          { value: 'name-desc', label: 'Name (Z-A)' },
+          { value: 'price-low', label: 'Price: Low to High' },
+          { value: 'price-high', label: 'Price: High to Low' },
+          { value: 'stock', label: 'Stock Level' }
+        ]
+      };
+      
+    } catch (error) {
+      console.error('Error getting filter options:', error);
+      return {
+        categories: ['All'],
+        priceRange: { min: 0, max: 1000 },
+        sortOptions: []
+      };
+    }
+  }
+
+delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   // Calculate profit metrics for a product
   calculateProfitMetrics(productData) {
     const price = parseFloat(productData.price) || 0;
@@ -946,7 +1059,6 @@ width = targetHeight * aspectRatio;
       'beverages': ['refreshing', 'cold', 'natural', 'healthy', 'thirst-quenching', 'energizing', 'pure'],
       'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
-      'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
 'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
       
       // Legacy support
@@ -1683,9 +1795,8 @@ width: Math.min(targetDimensions.width, mainRegion.width + 100),
       results,
 validCount: results.filter(r => r.isValid).length,
       invalidCount: results.filter(r => !r.isValid).length
-};
-}
-  
+    };
+  }
   // Enhanced offer conflict validation
   async validateOfferConflicts(productData, allProducts = [], excludeId = null) {
     try {
