@@ -9,9 +9,15 @@ import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import Account from "@/components/pages/Account";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
-import { orderService } from "@/services/api/orderService";
-import { productService } from "@/services/api/productService";
-import { paymentService } from "@/services/api/paymentService";
+import OrderService from "@/services/api/orderService";
+import ProductService from "@/services/api/productService";
+import PaymentService from "@/services/api/paymentService";
+
+// Initialize service instances
+const orderService = new OrderService();
+const productService = new ProductService();
+const paymentService = new PaymentService();
+
 function Checkout() {
   const navigate = useNavigate()
 const { cart, clearCart } = useCart()
