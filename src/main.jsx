@@ -264,14 +264,12 @@ async function initializeApp() {
     
     // Mark render start
     performanceMonitor.marks.renderStart = performance.now();
-
-    // Render app with error boundary
-root.render(
+// Render app with error boundary
+    root.render(
       <FastErrorBoundary>
         <App />
       </FastErrorBoundary>
     );
-
     // Mark initialization complete
     performanceMonitor.marks.initComplete = performance.now();
     
