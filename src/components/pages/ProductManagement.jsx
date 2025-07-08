@@ -48,11 +48,11 @@ const ProductManagement = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [showBulkPriceManager, setShowBulkPriceManager] = useState(false);
   const [pendingVisibilityToggles, setPendingVisibilityToggles] = useState(new Set());
-  
   // Preview Mode State
   // Preview Mode State
   const [previewMode, setPreviewMode] = useState(false);
@@ -691,12 +691,13 @@ return matchesSearch && matchesCategory;
               >
                 Add Product
               </Button>
-            </div>
+</div>
+          </div>
 
-      {/* Search and Filter */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
+          {/* Search and Filter */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
             label="Search Products"
             placeholder="Search by name or barcode..."
             value={searchTerm}
