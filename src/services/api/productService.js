@@ -1,5 +1,3 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 class ProductService {
@@ -862,17 +860,16 @@ width = targetHeight * aspectRatio;
       'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
       'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
+'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
       
       // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
-'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
       'Dairy Products': ['creamy', 'calcium', 'protein', 'fresh', 'natural'],
       'Premium Meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher'],
       'Artisan Bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional'],
       'Beverages': ['refreshing', 'cold', 'thirst', 'natural', 'healthy']
     };
-    
     const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient', 'culinary'])];
     return [...new Set(tags)]; // Remove duplicates
   }
@@ -1416,9 +1413,191 @@ width = targetHeight * aspectRatio;
     return {
       x: Math.max(0, mainRegion.x - 50),
       y: Math.max(0, mainRegion.y - 50),
-      width: Math.min(targetDimensions.width, mainRegion.width + 100),
+width: Math.min(targetDimensions.width, mainRegion.width + 100),
       height: Math.min(targetDimensions.height, mainRegion.height + 100)
     };
   }
+
+  // Bulk Price Manager - Phase 1 Methods
+  
+  // Get paginated products for bulk price management
+  async getBulkPriceData(page = 1, limit = 100, filters = {}) {
+    await this.delay(300);
+    
+    try {
+      let filteredProducts = [...this.products];
+      
+      // Apply filters
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        filteredProducts = filteredProducts.filter(p => 
+          p && (
+            (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+            (p.barcode && p.barcode.includes(searchTerm))
+          )
+        );
+      }
+      
+      if (filters.category && filters.category !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p && p.category === filters.category);
+      }
+      
+      // Calculate pagination
+      const totalItems = filteredProducts.length;
+      const totalPages = Math.ceil(totalItems / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+      
+      return {
+        products: paginatedProducts,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems,
+          itemsPerPage: limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error getting bulk price data:', error);
+      throw new Error('Failed to load bulk price data');
+    }
+  }
+  
+  // Update product prices with validation
+  async updateProductPrices(productId, priceData) {
+    await this.delay(200);
+    
+    try {
+      const productIndex = this.products.findIndex(p => p.id === parseInt(productId));
+      if (productIndex === -1) {
+        throw new Error('Product not found');
+      }
+      
+      // Validate price data
+      const validation = this.validatePriceUpdate(priceData);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+      
+      const product = this.products[productIndex];
+      const updates = {};
+      
+      // Update base price
+      if (priceData.price !== undefined) {
+        updates.price = this.roundToDecimals(parseFloat(priceData.price), 2);
+      }
+      
+      // Update cost price
+      if (priceData.purchasePrice !== undefined) {
+        updates.purchasePrice = this.roundToDecimals(parseFloat(priceData.purchasePrice), 2);
+      }
+      
+      // Recalculate profit margin if both prices are available
+      const newPrice = updates.price || product.price || 0;
+      const newCostPrice = updates.purchasePrice || product.purchasePrice || 0;
+      
+      if (newCostPrice > 0) {
+        updates.profitMargin = this.roundToDecimals(((newPrice - newCostPrice) / newCostPrice) * 100, 2);
+        updates.minSellingPrice = this.roundToDecimals(newCostPrice * 1.1, 2);
+      }
+      
+      // Apply updates
+      this.products[productIndex] = {
+        ...this.products[productIndex],
+        ...updates,
+        lastPriceUpdate: new Date().toISOString()
+      };
+      
+      return {
+        success: true,
+        product: { ...this.products[productIndex] },
+        updatedFields: Object.keys(updates)
+      };
+      
+    } catch (error) {
+      console.error('Error updating product prices:', error);
+      throw new Error(error.message || 'Failed to update product prices');
+    }
+  }
+  
+  // Validate price update data
+  validatePriceUpdate(priceData) {
+    try {
+      // Validation Rule 1: Base price must be greater than 0
+      if (priceData.price !== undefined) {
+        const price = parseFloat(priceData.price);
+        if (isNaN(price) || price <= 0) {
+          return { isValid: false, error: 'Base price must be greater than 0' };
+        }
+      }
+      
+      // Validation Rule 2: Cost price cannot be negative
+      if (priceData.purchasePrice !== undefined) {
+        const costPrice = parseFloat(priceData.purchasePrice);
+        if (isNaN(costPrice) || costPrice < 0) {
+          return { isValid: false, error: 'Cost price cannot be negative' };
+        }
+      }
+      
+      // Additional validation: Base price must be greater than cost price
+      if (priceData.price !== undefined && priceData.purchasePrice !== undefined) {
+        const price = parseFloat(priceData.price);
+        const costPrice = parseFloat(priceData.purchasePrice);
+        
+        if (price <= costPrice) {
+          return { isValid: false, error: 'Base price must be greater than cost price' };
+        }
+      }
+      
+      return { isValid: true };
+      
+    } catch (error) {
+      return { isValid: false, error: 'Invalid price data format' };
+    }
+  }
+  
+  // Utility: Round to specified decimal places
+  roundToDecimals(value, decimals = 2) {
+    const factor = Math.pow(10, decimals);
+    return Math.round(value * factor) / factor;
+  }
+  
+  // Calculate margin percentage
+  calculateMarginPercentage(basePrice, costPrice) {
+    const base = parseFloat(basePrice) || 0;
+    const cost = parseFloat(costPrice) || 0;
+    
+    if (cost <= 0) return 0;
+    
+    return this.roundToDecimals(((base - cost) / cost) * 100, 2);
+  }
+  
+  // Bulk validate multiple price updates
+  async bulkValidatePriceUpdates(updates) {
+    await this.delay(100);
+    
+    const results = [];
+    
+    for (const update of updates) {
+      const validation = this.validatePriceUpdate(update.priceData);
+      results.push({
+        productId: update.productId,
+        isValid: validation.isValid,
+        error: validation.error
+      });
+    }
+    
+    return {
+      results,
+validCount: results.filter(r => r.isValid).length,
+      invalidCount: results.filter(r => !r.isValid).length
+    };
+  }
 }
-export const productService = new ProductService();
+
+export default ProductService;
