@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Heart, Minus, Plus, RefreshCw, Share2, Shield, ShoppingCart, Star, Truck } from "lucide-react";
-import { toast } from "react-toastify";
-import { addToCart, removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
-import { addNotification } from "@/store/notificationSlice.jsx";
-import ApperIcon from "@/components/ApperIcon";
-import Badge from "@/components/atoms/Badge";
+import { ArrowLeft, Heart, Minus, Plus, RefreshCw, Share2, Shield, ShoppingCart, Star, Truck } from 'lucide-react'
+import { toast } from 'react-toastify'
+import { addToCart, removeFromCart, updateQuantity } from "@/store/cartSlice";
+import { addNotification } from "@/store/notificationSlice";
+import ApperIcon from '@/components/ApperIcon'
+import Badge from '@/components/atoms/Badge'
 import Button from "@/components/atoms/Button";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
