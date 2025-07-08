@@ -70,15 +70,30 @@ const notificationSlice = createSlice({
       };
       state.lastUpdated = new Date().toISOString();
     },
-    addNotification: (state, action) => {
+addNotification: (state, action) => {
       const notification = {
         id: Date.now().toString(),
         message: action.payload.message,
         type: action.payload.type || 'info',
         timestamp: new Date().toISOString(),
+        read: false,
         ...action.payload
       };
       state.notifications.push(notification);
+    },
+    markAsRead: (state, action) => {
+      const { id } = action.payload || {};
+      if (id) {
+        const notification = state.notifications.find(n => n.id === id);
+        if (notification) {
+          notification.read = true;
+        }
+      } else {
+        // Mark all notifications as read if no ID provided
+        state.notifications.forEach(notification => {
+          notification.read = true;
+        });
+      }
     }
   },
   extraReducers: (builder) => {
@@ -107,7 +122,8 @@ export const {
   setError,
   clearError,
   resetAllCounts,
-  addNotification
+  addNotification,
+  markAsRead
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;
