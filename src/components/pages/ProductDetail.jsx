@@ -11,7 +11,7 @@ import Button from "@/components/atoms/Button";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import Cart from "@/components/pages/Cart";
-import { productService } from "@/services/api/productService";
+import productService from "@/services/api/productService";
 
 const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
