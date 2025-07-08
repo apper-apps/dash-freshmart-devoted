@@ -430,11 +430,8 @@ export const {
   clearCart,
   calculateTotals,
   setError,
-  clearError,
-  updatePricesFromValidation
+  clearError
 } = cartSlice.actions;
-// Export async thunks
-export { validateCartPrices, addToCartWithValidation, updateQuantityWithValidation };
 
 // Selectors
 export const selectCartItems = (state) => state.cart.items;
