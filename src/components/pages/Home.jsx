@@ -4,10 +4,7 @@ import ApperIcon from "@/components/ApperIcon";
 import ProductGrid from "@/components/organisms/ProductGrid";
 import Button from "@/components/atoms/Button";
 import Category from "@/components/pages/Category";
-import ProductService from "@/services/api/productService";
-
-const productService = new ProductService();
-
+import productService from "@/services/api/productService";
 function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
