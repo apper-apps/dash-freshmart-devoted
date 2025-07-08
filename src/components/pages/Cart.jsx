@@ -1,12 +1,99 @@
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import CartItem from '@/components/molecules/CartItem';
-import Empty from '@/components/ui/Empty';
-import { selectCartItems, selectCartTotal, selectCartItemCount, clearCart, validateCartPrices } from '@/store/cartSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { ArrowRight, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { Link, useNavigate } from "react-router-dom";
+import { clearCart, removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
+import { addNotification } from "@/store/notificationSlice.jsx";
+import { selectCartItemCount, selectCartItems, selectCartTotal, validateCartPrices } from "@/store/cartSlice";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Empty from "@/components/ui/Empty";
+import Checkout from "@/components/pages/Checkout";
+// CartItem Component
+const CartItem = ({ item }) => {
+  const dispatch = useDispatch();
+  
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity <= 0) {
+      dispatch(removeFromCart(item.id));
+      toast.success('Item removed from cart');
+    } else {
+      dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+    }
+  };
 
+  const handleRemove = () => {
+    dispatch(removeFromCart(item.id));
+    toast.success('Item removed from cart');
+  };
+
+  return (
+    <div className="card p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center space-x-4">
+        {/* Product Image */}
+        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+          {item.image ? (
+            <img 
+              src={item.image} 
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ApperIcon name="Package" size={24} className="text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {/* Product Details */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Rs. {item.price?.toLocaleString() || '0'}
+          </p>
+          {item.category && (
+            <p className="text-xs text-gray-400 mt-1">{item.category}</p>
+          )}
+        </div>
+
+        {/* Quantity Controls */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => handleQuantityChange(item.quantity - 1)}
+            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <Minus size={16} />
+          </button>
+          
+          <span className="w-8 text-center font-medium">{item.quantity}</span>
+          
+          <button
+            onClick={() => handleQuantityChange(item.quantity + 1)}
+            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+
+        {/* Item Total */}
+        <div className="text-right">
+          <p className="font-semibold text-gray-900">
+            Rs. {((item.price || 0) * item.quantity).toLocaleString()}
+          </p>
+        </div>
+
+        {/* Remove Button */}
+        <button
+          onClick={handleRemove}
+          className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+    </div>
+  );
+};
 const Cart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -163,5 +250,3 @@ const Cart = () => {
 };
 
 export default Cart;
-// Show cart content or empty state
-  // (Empty state is handled in the return JSX)

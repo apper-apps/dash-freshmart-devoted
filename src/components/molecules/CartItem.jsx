@@ -1,14 +1,17 @@
-import React from 'react';
-import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import { updateQuantity, removeFromCart, updateQuantityWithValidation } from '@/store/cartSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { Minus, Plus, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
+import { addNotification } from "@/store/notificationSlice.jsx";
+import { updateQuantityWithValidation } from "@/store/cartSlice";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
 
 const CartItem = ({ item }) => {
   const dispatch = useDispatch();
 
-const handleQuantityChange = async (newQuantity) => {
+  const handleQuantityChange = async (newQuantity) => {
     if (newQuantity === 0) {
       dispatch(removeFromCart(item.id));
       toast.success(`${item.name} removed from cart`);
@@ -26,12 +29,12 @@ const handleQuantityChange = async (newQuantity) => {
     }
   };
 
-const handleRemove = () => {
+  const handleRemove = () => {
     dispatch(removeFromCart(item.id));
     toast.success(`${item.name} removed from cart`);
   };
 
-return (
+  return (
     <div className={`flex items-center space-x-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100 transition-all duration-300 ${item.isUpdating ? 'quantity-change' : ''}`}>
       <div className="relative">
         <img
@@ -66,7 +69,7 @@ return (
         )}
       </div>
       
-<div className="flex items-center space-x-1 sm:space-x-2">
+      <div className="flex items-center space-x-1 sm:space-x-2">
         <button
           onClick={() => handleQuantityChange(item.quantity - 1)}
           disabled={item.quantity <= 1}

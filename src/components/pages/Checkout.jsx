@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useCart } from "@/hooks/useCart";
+import { ArrowLeft, CreditCard, Mail, MapPin, Phone, User } from "lucide-react";
+import { clearCart } from "@/store/cartSlice.jsx";
+import { addNotification } from "@/store/notificationSlice.jsx";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
-import Account from '@/components/pages/Account'
-import PaymentMethod from '@/components/molecules/PaymentMethod'
-import { orderService } from '@/services/api/orderService'
-import productService from '@/services/api/productService'
-import { paymentService } from '@/services/api/paymentService'
+import Account from "@/components/pages/Account";
+import PaymentMethod from "@/components/molecules/PaymentMethod";
+import { orderService } from "@/services/api/orderService";
+import productService from "@/services/api/productService";
+import { paymentService } from "@/services/api/paymentService";
 
 // Service instances are already created in the service files
 function Checkout() {
   const navigate = useNavigate()
-const { cart, clearCart } = useCart()
+  const dispatch = useDispatch()
+  const cart = useSelector(state => state.cart.items) || []
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState([])
@@ -340,8 +344,8 @@ paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending_verification',
         priceValidatedAt: new Date().toISOString()
       }
 
-      const order = await orderService.create(orderData)
-      clearCart()
+const order = await orderService.create(orderData)
+      dispatch(clearCart())
       toast.success('Order placed successfully!')
       navigate('/orders')
       return order

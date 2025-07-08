@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import ApperIcon from '@/components/ApperIcon';
-import SearchBar from '@/components/molecules/SearchBar';
-import { selectCartItemCount } from '@/store/cartSlice';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bell, Heart, Menu, Search, ShoppingCart, User, X } from "lucide-react";
+import { toast } from "react-toastify";
+import { clearCart } from "@/store/cartSlice.jsx";
+import { addNotification, markAsRead } from "@/store/notificationSlice.jsx";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Orders from "@/components/pages/Orders";
+import Home from "@/components/pages/Home";
+import SearchBar from "@/components/molecules/SearchBar";
 
-const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const Header = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cartCount = useSelector(selectCartItemCount);
+  const location = useLocation();
+  
+  const cartCount = useSelector(state => state.cart?.items?.length || 0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchFilters, setSearchFilters] = useState({
     category: 'All',

@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { ArrowLeft, Heart, Minus, Plus, RefreshCw, Share2, Shield, ShoppingCart, Star, Truck } from "lucide-react";
 import { toast } from "react-toastify";
-import { useCart } from "@/hooks/useCart";
+import { addToCart, removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
+import { addNotification } from "@/store/notificationSlice.jsx";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import Cart from "@/components/pages/Cart";
-import ProductService from "@/services/api/productService";
-
-const productService = ProductService;
+import { productService } from "@/services/api/productService";
 
 const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -18,9 +19,11 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   
-  const { productId } = useParams();
+const { productId } = useParams();
   const navigate = useNavigate();
-  const { addToCart, loading: cartLoading } = useCart();
+  const dispatch = useDispatch();
+  const { items: cartItems } = useSelector(state => state.cart);
+  const [cartLoading, setCartLoading] = useState(false);
 
   useEffect(() => {
     if (productId) {
@@ -40,14 +43,28 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = () => {
+const handleAddToCart = () => {
     if (!product) return;
     
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product);
-    }
+    setCartLoading(true);
     
-    toast.success(`${quantity} x ${product.name} added to cart!`);
+    try {
+      dispatch(addToCart({ 
+        ...product, 
+        quantity: quantity 
+      }));
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: `${quantity} x ${product.name} added to cart!`
+      }));
+      
+      toast.success(`${quantity} x ${product.name} added to cart!`);
+    } catch (error) {
+      toast.error('Failed to add item to cart');
+    } finally {
+      setCartLoading(false);
+    }
   };
 
   const handleBuyNow = () => {

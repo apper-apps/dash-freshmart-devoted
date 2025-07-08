@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Camera, Copy, Download, Eye, Image, Palette, RefreshCw, Share2, Sparkles, Trash2, Upload, Wand2, Zap } from "lucide-react";
 import { toast } from "react-toastify";
+import { addNotification } from "@/store/notificationSlice.jsx";
+import { generateHistory } from "@/services/mockData/aiGenerateHistory.jsx";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
+import Category from "@/components/pages/Category";
 import { aiGenerateService } from "@/services/api/aiGenerateService";
 import { format } from "date-fns";
 
@@ -101,7 +107,7 @@ const AIGenerate = () => {
     loadHistory();
   }, []);
 
-const handleGenerate = async () => {
+  const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.warning('Please enter a prompt');
       return;
@@ -146,7 +152,8 @@ const handleGenerate = async () => {
       setLoading(false);
     }
   };
-const handleSave = async () => {
+
+  const handleSave = async () => {
     const hasContent = activeTab === 'images' ? generatedImage : generatedContent?.trim();
     
     if (!hasContent) {
@@ -259,7 +266,7 @@ const handleSave = async () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Generation Interface */}
         <div className="lg:col-span-2">
-<div className="card p-6 mb-6">
+          <div className="card p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Generate {tabs.find(t => t.id === activeTab)?.label}
             </h2>
@@ -393,7 +400,7 @@ const handleSave = async () => {
             </Button>
           </div>
 
-{/* Generated Content/Image */}
+          {/* Generated Content/Image */}
           {(generatedContent || generatedImage || error) && (
             <div className="card p-6">
               <div className="flex items-center justify-between mb-4">
@@ -515,7 +522,7 @@ const handleSave = async () => {
                 <p className="text-gray-600">No generation history</p>
               </div>
             ) : (
-<div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
                 {generationHistory.map((item) => (
                   <div key={item.Id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">

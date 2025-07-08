@@ -7,7 +7,6 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
-// Direct imports for core components
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
 import Checkout from "@/components/pages/Checkout";
@@ -27,8 +26,6 @@ const Category = React.lazy(() => import('@/components/pages/Category'));
 const Orders = React.lazy(() => import('@/components/pages/Orders'));
 const OrderTracking = React.lazy(() => import('@/components/pages/OrderTracking'));
 const Account = React.lazy(() => import('@/components/pages/Account'));
-// Import components
-
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
@@ -123,7 +120,7 @@ return (
     <Provider store={store}>
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
+          <div>
             {/* Minimal SDK Status Indicator (only in development) */}
             {import.meta.env.DEV && sdkError && (
               <div className="fixed top-0 right-0 z-50 p-2 text-xs">
@@ -132,8 +129,8 @@ return (
                 </div>
               </div>
             )}
-            <Suspense fallback={<Loading type="page" />}>
-              <Routes>
+            
+            <Routes>
                 <Route path="/" element={<Layout />}>
                   {/* Core routes - no lazy loading */}
                   <Route index element={<Home />} />
@@ -211,7 +208,7 @@ return (
                   } />
 </Route>
               </Routes>
-            </Suspense>
+            
             <ToastContainer
               position="top-right"
               autoClose={3000}

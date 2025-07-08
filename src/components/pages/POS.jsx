@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Clock, CreditCard, DollarSign, Minus, Package, Plus, Receipt, Scan, Search, ShoppingCart, TrendingUp, Users, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { addToCart, clearCart, removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
+import { addNotification } from "@/store/notificationSlice.jsx";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
@@ -9,6 +13,7 @@ import Cart from "@/components/pages/Cart";
 import Analytics from "@/components/pages/Analytics";
 import Category from "@/components/pages/Category";
 import SearchBar from "@/components/molecules/SearchBar";
+import PaymentMethod from "@/components/molecules/PaymentMethod";
 import BarcodeScanner from "@/components/molecules/BarcodeScanner";
 import { posService } from "@/services/api/posService";
 import { productService } from "@/services/api/productService";
