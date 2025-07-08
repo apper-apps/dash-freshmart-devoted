@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import CategoryFilter from '@/components/molecules/CategoryFilter';
-import ProductGrid from '@/components/organisms/ProductGrid';
-import SearchBar from '@/components/molecules/SearchBar';
-import ApperIcon from '@/components/ApperIcon';
-import { productService } from '@/services/api/productService';
+import React, { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import ApperIcon from "@/components/ApperIcon";
+import ProductGrid from "@/components/organisms/ProductGrid";
+import SearchBar from "@/components/molecules/SearchBar";
+import CategoryFilter from "@/components/molecules/CategoryFilter";
+import ProductService from "@/services/api/productService";
 
 const Category = () => {
   const { categoryName } = useParams();
@@ -16,6 +16,8 @@ const Category = () => {
   const [selectedCategory, setSelectedCategory] = useState(categoryName || 'All');
   const [sortBy, setSortBy] = useState('name');
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  
+  const productService = new ProductService();
 
   const categories = ['All', 'Groceries', 'Meat', 'Fruits', 'Vegetables'];
   const sortOptions = [
@@ -192,5 +194,3 @@ const Category = () => {
     </div>
   );
 };
-
-export default Category;
