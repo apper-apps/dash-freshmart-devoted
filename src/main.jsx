@@ -99,10 +99,10 @@ function handleSDKMessage(event) {
   }
 }
 
-  class BackgroundSDKLoader {
+class BackgroundSDKLoader {
     static messageHandler = null;
     
-static async loadInBackground() {
+    static async loadInBackground() {
       try {
         await this.loadServices();
         await this.initializeWhenReady();
