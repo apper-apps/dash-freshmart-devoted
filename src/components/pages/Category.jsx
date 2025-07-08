@@ -191,6 +191,8 @@ const Category = () => {
         onRetry={loadProducts}
         emptyMessage={searchTerm ? `No products found for "${searchTerm}"` : "No products found in this category"}
       />
-    </div>
+</div>
   );
 };
+
+export default Category;
