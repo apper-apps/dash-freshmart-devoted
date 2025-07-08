@@ -10,10 +10,10 @@ import Loading from "@/components/ui/Loading";
 import Cart from "@/components/pages/Cart";
 import Category from "@/components/pages/Category";
 import Checkout from "@/components/pages/Checkout";
-import { productService } from "@/services/api/productService";
+import productService from "@/services/api/productService";
 
-// Material UI Switch Component
-const Switch = ({ checked, onChange, color = "primary", disabled = false, ...props }) => {
+// Enhanced Switch Component with better accessibility
+function Switch({ checked, onChange, color = 'primary', disabled = false, ...props }) {
   const baseClasses = "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
   const colorClasses = {
     primary: checked 
