@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Camera, Copy, Download, Eye, Image, Palette, RefreshCw, Share2, Sparkles, Trash2, Upload, Wand2, Zap } from "lucide-react";
-import { toast } from "react-toastify";
-import { addNotification } from "@/store/notificationSlice.js";
-import { generateHistory } from "@/services/mockData/aiGenerateHistory.jsx";
-import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
+import { toast } from 'react-toastify'
+import { addNotification } from '@/store/notificationSlice.js'
+import { generateHistory } from "@/services/mockData/aiGenerateHistory.js";
+import ApperIcon from '@/components/ApperIcon'
+import Button from '@/components/atoms/Button'
 import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
