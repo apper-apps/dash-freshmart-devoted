@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { notificationService } from "@/services/api/notificationService";
 
 const initialState = {
   counts: {
@@ -23,6 +22,8 @@ export const fetchNotificationCounts = createAsyncThunk(
   'notifications/fetchCounts',
   async (_, { rejectWithValue }) => {
     try {
+      // Import dynamically to avoid circular dependency
+      const { notificationService } = await import("@/services/api/notificationService");
       const response = await notificationService.getCounts();
       return response.data;
     } catch (error) {
@@ -92,8 +93,27 @@ addNotification: (state, action) => {
         // Mark all notifications as read if no ID provided
         state.notifications.forEach(notification => {
           notification.read = true;
-        });
+});
       }
+    },
+    clearNotification: (state, action) => {
+      const { id } = action.payload;
+      state.notifications = state.notifications.filter(n => n.id !== id);
+    },
+    clearAllNotifications: (state) => {
+      state.notifications = [];
+    },
+    showNotification: (state, action) => {
+      const notification = {
+        id: Date.now().toString(),
+        message: action.payload.message,
+        type: action.payload.type || 'info',
+        timestamp: new Date().toISOString(),
+        read: false,
+        duration: action.payload.duration || 5000,
+        ...action.payload
+      };
+      state.notifications.push(notification);
     }
   },
   extraReducers: (builder) => {
@@ -123,7 +143,10 @@ export const {
   clearError,
   resetAllCounts,
   addNotification,
-  markAsRead
+  markAsRead,
+  clearNotification,
+  clearAllNotifications,
+  showNotification
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;
