@@ -26,7 +26,41 @@ import Checkout from "@/components/pages/Checkout";
 import FinancialDashboard from "@/components/pages/FinancialDashboard";
 import Home from "@/components/pages/Home";
 // Core components - direct import for immediate availability
-// Core components - direct import for immediate availability
+// Enhanced Loading component with timing and retry functionality
+const EnhancedLoading = ({ message = "Loading...", componentName = "" }) => {
+  const [loadingTime, setLoadingTime] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLoadingTime(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <Loading />
+        <p className="mt-4 text-gray-600 font-medium">{message}</p>
+        {componentName && (
+          <p className="mt-2 text-sm text-gray-500">Loading {componentName}...</p>
+        )}
+        {loadingTime > 5 && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">Taking longer than expected...</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 text-sm text-yellow-600 hover:text-yellow-800 underline"
+            >
+              Refresh page
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Enhanced lazy loading with better error handling, retry logic, and module preloading
 function createLazyComponent(importFn, componentName) {
   const LazyComponent = lazy(() => 
@@ -235,42 +269,95 @@ checkStatus();
       clearTimeout(timeout);
       mounted = false;
     };
-  }, [checkSDKStatus]);
+}, [checkSDKStatus]);
 
-  // Enhanced loading component with status messages and timeout handling
-  const EnhancedLoading = ({ message = "Loading...", componentName = "" }) => {
-    const [loadingTime, setLoadingTime] = useState(0);
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setLoadingTime(prev => prev + 1);
-      }, 1000);
-      
-      return () => clearInterval(interval);
-    }, []);
+  // Component status and error handling
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    let checkCount = 0;
+    const maxChecks = 10;
     
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loading />
-          <p className="mt-4 text-gray-600 font-medium">{message}</p>
-          {componentName && (
-            <p className="mt-2 text-sm text-gray-500">Loading {componentName}...</p>
-          )}
-          {loadingTime > 5 && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">Taking longer than expected...</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="mt-2 text-sm text-yellow-600 hover:text-yellow-800 underline"
-              >
-                Refresh page
-              </button>
-            </div>
-)}
-        </div>
-      </div>
-    );
-  };
+    const checkStatus = async () => {
+      const status = {
+        available: typeof window !== 'undefined',
+        ready: document.readyState === 'complete',
+        initialized: true
+      };
+      
+      if (status.available && status.ready) {
+        setMounted(true);
+      } else if (checkCount < maxChecks) {
+        checkCount++;
+        setTimeout(checkStatus, 100);
+      } else {
+        setMounted(true);
+      }
+    };
+    
+    checkStatus();
+    
+    const interval = setInterval(checkStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Global error handler
+  const errorHandler = useCallback((error) => {
+    console.error('Application error:', error);
+    // Error tracking would be implemented here
+  }, []);
+  
+  useEffect(() => {
+    const handleError = (event) => {
+      errorHandler(event.error);
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+    
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, [errorHandler]);
+  
+  // Preload critical components
+  useEffect(() => {
+    const preloadTimer = setTimeout(() => {
+      // Preload components that are likely to be used
+      const componentsToPreload = [
+        () => import('@/components/pages/Home'),
+        () => import('@/components/pages/Cart'),
+        () => import('@/components/pages/ProductDetail'),
+      ];
+      
+      componentsToPreload.forEach(component => {
+        component().catch(console.error);
+      });
+    }, 2000);
+    
+    return () => clearTimeout(preloadTimer);
+  }, []);
+  
+  // SDK utilities
+// Performance monitoring
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (performance.memory) {
+        const memoryUsage = performance.memory.usedJSHeapSize / 1024 / 1024;
+        if (memoryUsage > 100) {
+          console.warn('High memory usage detected:', memoryUsage.toFixed(2), 'MB');
+        }
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  if (!mounted) {
+    return <EnhancedLoading message="Initializing application..." />;
+  }
+  
   // Lightweight error handling - don't block the app for SDK errors
   useEffect(() => {
     const handleError = (event) => {
@@ -283,12 +370,12 @@ checkStatus();
     window.addEventListener('unhandledrejection', handleError);
     return () => window.removeEventListener('unhandledrejection', handleError);
   }, []);
-// Memoized SDK utilities for performance
+
+  // Memoized SDK utilities for performance
   const sdkUtils = useMemo(() => ({
     ready: sdkReady,
     error: sdkError,
     checkStatus: checkSDKStatus
-  }), [sdkReady, sdkError, checkSDKStatus]);
 
   // Component preloader for performance
 // Component preloader for performance
