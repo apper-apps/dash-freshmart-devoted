@@ -2772,10 +2772,6 @@ const BulkUpdateSidebar = ({
                 <h3 className="font-medium text-gray-900">Update Strategy</h3>
               </div>
 <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <ApperIcon name="TrendingUp" size={16} className="text-primary" />
-                  <h3 className="font-medium text-gray-900">Update Strategy</h3>
-                </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
@@ -2860,8 +2856,8 @@ const BulkUpdateSidebar = ({
                       icon="TrendingUp"
                     />
                   </div>
-                )}
-              </div>
+)}
+            </div>
 
               {/* Price Guards */}
               {updateData.priceGuards.enabled && (
@@ -3563,28 +3559,8 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
       </div>
     </div>
   );
+);
 };
-            {/* Category Filter */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <ApperIcon name="Filter" size={16} className="text-primary" />
-                <h3 className="font-medium text-gray-900">Category Filter</h3>
-              </div>
-              
-              <div className="space-y-2">
-                <select
-                  value={updateData.category}
-                  onChange={handleInputChange}
-                  name="category"
-                  className="input-field text-sm"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">
@@ -3614,7 +3590,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
               </Button>
             </div>
 
-            {/* Switch to Modal */}
+{/* Switch to Modal */}
             <div className="pt-4 border-t border-gray-200">
               <Button
                 type="button"
@@ -3622,7 +3598,9 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
                 onClick={onSwitchToModal}
                 className="w-full text-blue-600"
               >
-</div>
+                Switch to Modal View
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -3631,8 +3609,6 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
       <div className="flex-1 flex flex-col">
         {/* Content Header */}
         <div className="p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
               Product List ({filteredProducts.length})
@@ -3662,7 +3638,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
               </select>
             </div>
           </div>
-</div>
+        </div>
 
         {/* Product Table */}
         <div className="flex-1 overflow-auto">
@@ -5695,26 +5671,9 @@ const CustomerProductGrid = ({
                 />
                 
                 {/* Product Badges */}
+{/* Product Badges */}
                 {product.discountValue && (
                   <div className="absolute top-2 left-2">
-                            >
-                              {status.status === 'updated' ? 'Updated' :
-                               status.status === 'pending' ? 'Pending' :
-                               status.status === 'conflict' ? 'Conflict' :
-                               status.status === 'locked' ? 'Locked' : 'No Changes'}
-                            </Badge>
-                            {status.timestamp && (
-                              <div className="text-xs text-gray-500">
-                                {status.timestamp}
-                              </div>
-                            )}
-                            {conflictAlerts.has(product.id) && (
-                              <div className="text-xs text-red-600 font-medium">
-                                {conflictAlerts.get(product.id).message}
-                              </div>
-                            )}
-                          </div>
-                        </td>
 <Badge variant="sale" className="text-xs font-bold">
                       {product.discountType === 'Percentage' ? 
                         `${product.discountValue}% OFF` : 
