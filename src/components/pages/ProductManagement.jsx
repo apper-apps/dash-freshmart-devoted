@@ -3556,130 +3556,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
             </div>
           </div>
         )}
-</div>
-    </div>
-  );
-};
-
-</div>
-
-            {/* Switch to Modal */}
-            <div className="pt-4 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onSwitchToModal}
-                className="w-full text-blue-600"
-              >
-                Switch to Modal View
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Content Header */}
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Product List ({filteredProducts.length})
-            </h3>
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <div className="relative">
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  icon="Search"
-                  className="w-64"
-                />
-              </div>
-              
-              {/* Category Filter */}
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="input-field w-48"
-              >
-                <option value="all">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Product Table */}
-        <div className="flex-1 overflow-auto">
-          <ProductBulkUpdateTable
-            products={filteredProducts}
-            updateData={updateData}
-            preview={preview}
-            showPreview={showPreview}
-            previewHighlights={previewHighlights}
-            onRowSelection={handleRowSelection}
-            onSelectAll={handleSelectAll}
-            onDeselectAll={handleDeselectAll}
-          />
-        </div>
-        
-        {/* Enhanced Preview Results with Delta Summary */}
-        {showPreview && preview.length > 0 && (
-          <div className="p-4 bg-gray-50 border-t border-gray-200">
-            <div className="mb-4">
-              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                <ApperIcon name="Eye" size={16} />
-                <span>Preview Summary</span>
-              </h4>
-              <p className="text-sm text-gray-600">
-                {preview.length} products will be updated with price changes
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {preview.length}
-                </div>
-                <div className="text-sm text-gray-600">Total Updates</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {preview.filter(p => p.priceChange > 0).length}
-                </div>
-                <div className="text-sm text-gray-600">Price Increases</div>
-                <div className="text-xs text-green-600 mt-1">
-                  ↑ {preview.filter(p => p.priceChange > 0).length > 0 ? 'Green Rows' : 'None'}
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {preview.filter(p => p.priceChange < 0).length}
-                </div>
-                <div className="text-sm text-gray-600">Price Decreases</div>
-                <div className="text-xs text-red-600 mt-1">
-                  ↓ {preview.filter(p => p.priceChange < 0).length > 0 ? 'Red Rows' : 'None'}
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {preview.filter(p => p.hasConflicts).length}
-                </div>
-                <div className="text-sm text-gray-600">Conflicts</div>
-                <div className="text-xs text-yellow-600 mt-1">
-                  ⚠ {preview.filter(p => p.hasConflicts).length > 0 ? 'Warning' : 'None'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+)}
       </div>
     </div>
   );
@@ -3875,6 +3752,16 @@ const isAllSelected = products.length > 0 && products.every(p => updateData.sele
 </div>
   );
 };
+
+const ImageUploadSystem = ({
+  imageData, 
+  setImageData, 
+  onImageUpload, 
+  onImageSearch, 
+  onImageSelect,
+  onAIImageGenerate,
+  formData
+}) => {
 const ImageUploadSystem = ({
   imageData, 
   setImageData, 
