@@ -3762,15 +3762,6 @@ const ImageUploadSystem = ({
   onAIImageGenerate,
   formData
 }) => {
-const ImageUploadSystem = ({
-  imageData, 
-  setImageData, 
-  onImageUpload, 
-  onImageSearch, 
-  onImageSelect,
-  onAIImageGenerate,
-  formData
-}) => {
   const [dragActive, setDragActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [cropData, setCropData] = useState({ x: 0, y: 0, width: 100, height: 100 });
@@ -6605,5 +6596,3 @@ disabled={currentPage === totalPages}
     </div>
   );
 };
-
-export default ProductManagement;
