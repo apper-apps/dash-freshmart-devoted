@@ -2771,7 +2771,322 @@ const BulkUpdateSidebar = ({
                 <ApperIcon name="TrendingUp" size={16} className="text-primary" />
                 <h3 className="font-medium text-gray-900">Update Strategy</h3>
               </div>
+<div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <ApperIcon name="TrendingUp" size={16} className="text-primary" />
+                  <h3 className="font-medium text-gray-900">Update Strategy</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="strategy"
+                      value="percentage"
+                      checked={updateData.strategy === 'percentage'}
+                      onChange={handleInputChange}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <label className="text-sm text-gray-700">Percentage Change</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="strategy"
+                      value="fixed"
+                      checked={updateData.strategy === 'fixed'}
+                      onChange={handleInputChange}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <label className="text-sm text-gray-700">Fixed Amount</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="strategy"
+                      value="range"
+                      checked={updateData.strategy === 'range'}
+                      onChange={handleInputChange}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <label className="text-sm text-gray-700">Price Range</label>
+                  </div>
+                </div>
+
+                {updateData.strategy === 'percentage' && (
+                  <Input
+                    label="Percentage (%)"
+                    type="number"
+                    step="0.1"
+                    value={updateData.value}
+                    onChange={handleInputChange}
+                    name="value"
+                    icon="Percent"
+                  />
+                )}
+
+                {updateData.strategy === 'fixed' && (
+                  <Input
+                    label="Fixed Amount (Rs.)"
+                    type="number"
+                    step="0.01"
+                    value={updateData.value}
+                    onChange={handleInputChange}
+                    name="value"
+                    icon="DollarSign"
+                  />
+                )}
+
+                {updateData.strategy === 'range' && (
+                  <div className="space-y-2">
+                    <Input
+                      label="Min Price (Rs.)"
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      value={updateData.minPrice}
+                      onChange={handleInputChange}
+                      name="minPrice"
+                      icon="TrendingDown"
+                    />
+                    <Input
+                      label="Max Price (Rs.)"
+                      type="number"
+                      step="0.01"
+                      max="100000"
+                      value={updateData.maxPrice}
+                      onChange={handleInputChange}
+                      name="maxPrice"
+                      icon="TrendingUp"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Price Guards */}
+              {updateData.priceGuards.enabled && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="Shield" size={16} className="text-primary" />
+                    <h3 className="font-medium text-gray-900">Price Guards</h3>
+                  </div>
+                  
+                  <Input
+                    label="Min Price (Rs.)"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    value={updateData.priceGuards.minPrice}
+                    onChange={(e) => handleNestedInputChange('priceGuards.minPrice', parseFloat(e.target.value) || 1)}
+                    icon="TrendingDown"
+                  />
+                  <Input
+                    label="Max Price (Rs.)"
+                    type="number"
+                    step="0.01"
+                    max="100000"
+                    value={updateData.priceGuards.maxPrice}
+                    onChange={(e) => handleNestedInputChange('priceGuards.maxPrice', parseFloat(e.target.value) || 100000)}
+                    icon="TrendingUp"
+                  />
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={updateData.priceGuards.enforceMargin}
+                      onChange={(e) => handleNestedInputChange('priceGuards.enforceMargin', e.target.checked)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <label className="text-sm text-gray-700">Enforce Min Margin</label>
+                  </div>
+                  
+                  {updateData.priceGuards.enforceMargin && (
+                    <Input
+                      label="Min Margin (%)"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={updateData.priceGuards.minMargin}
+                      onChange={(e) => handleNestedInputChange('priceGuards.minMargin', parseFloat(e.target.value) || 5)}
+                      icon="Percent"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="Filter" size={16} className="text-primary" />
+                <h3 className="font-medium text-gray-900">Category Filter</h3>
+              </div>
               
+              <div className="space-y-2">
+                <select
+                  value={updateData.category}
+                  onChange={handleInputChange}
+                  name="category"
+                  className="input-field text-sm"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="secondary"
+                icon="Eye"
+                onClick={generatePreview}
+                className="w-full"
+                disabled={
+                  (updateData.strategy !== 'range' && !updateData.value) ||
+                  (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice))
+                }
+              >
+                Preview Changes
+              </Button>
+              
+              <Button
+                type="button"
+                variant="primary"
+                icon="Save"
+                onClick={handleSubmit}
+                className="w-full"
+                disabled={!showPreview || preview.length === 0}
+              >
+                Apply Updates ({preview.length})
+              </Button>
+            </div>
+
+            {/* Switch to Modal */}
+            <div className="pt-4 border-t border-gray-200">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onSwitchToModal}
+                className="w-full text-blue-600"
+              >
+                Switch to Modal View
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Content Header */}
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Product List ({filteredProducts.length})
+            </h3>
+            <div className="flex items-center space-x-4">
+              {/* Search */}
+              <div className="relative">
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  icon="Search"
+                  className="w-64"
+                />
+              </div>
+              
+              {/* Category Filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field w-48"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Table */}
+        <div className="flex-1 overflow-auto">
+          <ProductBulkUpdateTable
+            products={filteredProducts}
+            updateData={updateData}
+            preview={preview}
+            showPreview={showPreview}
+            previewHighlights={previewHighlights}
+            onRowSelection={handleRowSelection}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+          />
+        </div>
+        
+        {/* Enhanced Preview Results with Delta Summary */}
+        {showPreview && preview.length > 0 && (
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="mb-4">
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <ApperIcon name="Eye" size={16} />
+                <span>Preview Summary</span>
+              </h4>
+              <p className="text-sm text-gray-600">
+                {preview.length} products will be updated with price changes
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {preview.length}
+                </div>
+                <div className="text-sm text-gray-600">Total Updates</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {preview.filter(p => p.priceChange > 0).length}
+                </div>
+                <div className="text-sm text-gray-600">Price Increases</div>
+                <div className="text-xs text-green-600 mt-1">
+                  ↑ {preview.filter(p => p.priceChange > 0).length > 0 ? 'Green Rows' : 'None'}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {preview.filter(p => p.priceChange < 0).length}
+                </div>
+                <div className="text-sm text-gray-600">Price Decreases</div>
+                <div className="text-xs text-red-600 mt-1">
+                  ↓ {preview.filter(p => p.priceChange < 0).length > 0 ? 'Red Rows' : 'None'}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {preview.filter(p => p.hasConflicts).length}
+                </div>
+                <div className="text-sm text-gray-600">Conflicts</div>
+                <div className="text-xs text-yellow-600 mt-1">
+                  ⚠ {preview.filter(p => p.hasConflicts).length > 0 ? 'Warning' : 'None'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Bulk Price Manager Modal with concurrent edit protection
 const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -3004,42 +3319,251 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
-                  />
-                  <Input
-                    label="Max Price (Rs.)"
-                    type="number"
-                    step="0.01"
-                    max="100000"
-                    value={updateData.priceGuards.maxPrice}
-                    onChange={(e) => handleNestedInputChange('priceGuards.maxPrice', parseFloat(e.target.value) || 100000)}
-                    icon="TrendingUp"
-                  />
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={updateData.priceGuards.enforceMargin}
-                      onChange={(e) => handleNestedInputChange('priceGuards.enforceMargin', e.target.checked)}
-                      className="text-primary focus:ring-primary"
-                    />
-                    <label className="text-sm text-gray-700">Enforce Min Margin</label>
-                  </div>
-                  
-                  {updateData.priceGuards.enforceMargin && (
-                    <Input
-                      label="Min Margin (%)"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={updateData.priceGuards.minMargin}
-                      onChange={(e) => handleNestedInputChange('priceGuards.minMargin', parseFloat(e.target.value) || 5)}
-                      icon="Percent"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
+            >
+              <ApperIcon name="X" size={24} />
+            </button>
+          </div>
+        </div>
 
+        {/* Filters */}
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Search Products"
+              placeholder="Search by name or barcode..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              icon="Search"
+            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Category Filter</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Badge variant="info" className="text-sm">
+                {filteredProducts.length} products • Page {currentPage} of {totalPages}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Product List Table */}
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="p-6">
+              <Loading type="table" />
+            </div>
+          ) : paginatedProducts.length === 0 ? (
+            <div className="p-6 text-center">
+              <ApperIcon name="Package" size={48} className="text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+              <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80">
+                      Product
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Existing Prices
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      New Prices
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedProducts.map((product) => {
+                    const editing = editingPrices[product.id] || {};
+                    const status = getProductStatus(product.id);
+                    const isPending = pendingUpdates.has(product.id);
+                    
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        {/* Product Column: 60px image + Name + SKU (truncated) */}
+                        <td className="px-4 py-4">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={product.imageUrl || "/api/placeholder/60/60"}
+                              alt={product.name}
+                              className="w-15 h-15 rounded-lg object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.target.src = "/api/placeholder/60/60";
+                              }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {product.name}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate max-w-32">
+                                SKU: {product.barcode || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Existing Prices: Base Price + Cost Price + Margin % */}
+                        <td className="px-4 py-4">
+                          <div className="space-y-1">
+                            <div className="text-sm">
+                              <span className="text-gray-600">Base:</span>
+                              <span className="ml-2 font-medium">Rs. {product.price || 0}</span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-gray-600">Cost:</span>
+                              <span className="ml-2 font-medium">Rs. {product.purchasePrice || 0}</span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-gray-600">Margin:</span>
+                              <span className="ml-2 font-medium">{product.profitMargin || 0}%</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* New Prices: Editable inputs for Base/Cost + Auto-margin */}
+                        <td className="px-4 py-4">
+                          <div className="space-y-2">
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder={`Rs. ${product.price || 0}`}
+                              value={editing.newBasePrice || ''}
+                              onChange={(e) => updateEditingPrice(product.id, 'newBasePrice', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder={`Rs. ${product.purchasePrice || 0}`}
+                              value={editing.newCostPrice || ''}
+                              onChange={(e) => updateEditingPrice(product.id, 'newCostPrice', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <div className="text-xs text-gray-600">
+                              Auto-margin: {editing.newMargin || 0}%
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status: Pending/Updated/Conflict + Timestamp */}
+                        <td className="px-4 py-4">
+                          <div className="space-y-1">
+                            <Badge 
+                              variant={
+                                status.status === 'updated' ? 'success' :
+                                status.status === 'pending' ? 'warning' :
+                                status.status === 'conflict' ? 'error' :
+                                status.status === 'locked' ? 'info' : 'secondary'
+                              }
+                              className="text-xs"
+                            >
+                              {status.status === 'updated' ? 'Updated' :
+                               status.status === 'pending' ? 'Pending' :
+                               status.status === 'conflict' ? 'Conflict' :
+                               status.status === 'locked' ? 'Locked' : 'No Changes'}
+                            </Badge>
+                            {status.timestamp && (
+                              <div className="text-xs text-gray-500">
+                                {status.timestamp}
+                              </div>
+                            )}
+                            {conflictAlerts.has(product.id) && (
+                              <div className="text-xs text-red-600 font-medium">
+                                {conflictAlerts.get(product.id).message}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Actions: Apply/Revert buttons per row */}
+                        <td className="px-4 py-4">
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon={isPending ? "Loader2" : "Check"}
+                              onClick={() => handleApplyUpdate(product)}
+                              disabled={isPending || (!editing.newBasePrice && !editing.newCostPrice)}
+                              className={`text-green-600 hover:text-green-800 ${isPending ? 'animate-spin' : ''}`}
+                            >
+                              Apply
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon="RotateCcw"
+                              onClick={() => handleRevertUpdate(product.id)}
+                              disabled={isPending || (!editing.newBasePrice && !editing.newCostPrice)}
+                              className="text-gray-600 hover:text-gray-800"
+                            >
+                              Revert
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="p-6 border-t border-gray-200 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="ChevronLeft"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="px-3 py-1 text-sm bg-gray-100 rounded">
+                  {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="ChevronRight"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
             {/* Category Filter */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -3098,9 +3622,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
                 onClick={onSwitchToModal}
                 className="w-full text-blue-600"
               >
-                Switch to Modal View
-              </Button>
-            </div>
+</div>
           </div>
         )}
       </div>
@@ -3109,6 +3631,8 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
       <div className="flex-1 flex flex-col">
         {/* Content Header */}
         <div className="p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
               Product List ({filteredProducts.length})
@@ -3138,10 +3662,10 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
               </select>
             </div>
           </div>
-        </div>
+</div>
 
-{/* Product Table */}
-<div className="flex-1 overflow-auto">
+        {/* Product Table */}
+        <div className="flex-1 overflow-auto">
           <ProductBulkUpdateTable
             products={filteredProducts}
             updateData={updateData}
@@ -3153,6 +3677,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
             onDeselectAll={handleDeselectAll}
           />
         </div>
+        
         {/* Enhanced Preview Results with Delta Summary */}
         {showPreview && preview.length > 0 && (
           <div className="p-4 bg-gray-50 border-t border-gray-200">
@@ -5147,18 +5672,31 @@ const CustomerProductGrid = ({
             : 'grid-cols-2 lg:grid-cols-3 gap-6'
         }`}>
           {previewProducts.map((product) => (
-            <div
-{/* Status: Pending/Updated/Conflict + Timestamp */}
-                        <td className="px-4 py-4">
-                          <div className="space-y-1">
-                            <Badge 
-                              variant={
-                                status.status === 'updated' ? 'success' :
-                                status.status === 'pending' ? 'warning' :
-                                status.status === 'conflict' ? 'error' :
-                                status.status === 'locked' ? 'info' : 'secondary'
-                              }
-                              className="text-xs"
+<div
+              key={product.id}
+              onClick={() => {
+                setSelectedPreviewProduct(product);
+                setPreviewView('detail');
+              }}
+              className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
+                previewDevice === 'mobile' ? 'max-w-full' : ''
+              }`}
+            >
+              <div className="relative">
+                <img
+                  src={product.imageUrl || "/api/placeholder/300/200"}
+                  alt={product.name}
+                  className={`w-full ${
+                    previewDevice === 'mobile' ? 'h-48' : 'h-64'
+                  } object-cover rounded-t-xl`}
+                  onError={(e) => {
+                    e.target.src = "/api/placeholder/300/200";
+                  }}
+                />
+                
+                {/* Product Badges */}
+                {product.discountValue && (
+                  <div className="absolute top-2 left-2">
                             >
                               {status.status === 'updated' ? 'Updated' :
                                status.status === 'pending' ? 'Pending' :
@@ -5177,7 +5715,7 @@ const CustomerProductGrid = ({
                             )}
                           </div>
                         </td>
-                    <Badge variant="sale" className="text-xs font-bold">
+<Badge variant="sale" className="text-xs font-bold">
                       {product.discountType === 'Percentage' ? 
                         `${product.discountValue}% OFF` : 
                         `Rs. ${product.discountValue} OFF`}

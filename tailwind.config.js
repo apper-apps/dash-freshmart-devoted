@@ -45,11 +45,7 @@ export default {
           '0%': { transform: 'scale(1)' },
           '100%': { transform: 'scale(1.02)' },
         },
-'scale-102': {
-          '0%': { transform: 'scale(1)' },
-          '100%': { transform: 'scale(1.02)' },
-        },
-        'virtual-scroll': {
+'virtual-scroll': {
           '0%': { transform: 'translateY(-10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
@@ -63,22 +59,11 @@ export default {
           '100%': { borderColor: 'rgb(59 130 246)' },
         },
       },
-      colors: {
-        primary: '#2E7D32',
-        secondary: '#FF6F00',
-        accent: '#4CAF50',
-        success: '#4CAF50',
-        warning: '#FF9800',
-        error: '#F44336',
-        info: '#2196F3',
-        surface: '#FFFFFF',
-        background: '#F5F5F5',
-        // Concurrent edit colors
-        'concurrent-warning': '#FEF3C7',
-        'concurrent-error': '#FEE2E2',
-        'concurrent-info': '#DBEAFE',
-        'concurrent-lock': '#E0E7FF',
-      },
+      // Concurrent edit colors
+      'concurrent-warning': '#FEF3C7',
+      'concurrent-error': '#FEE2E2',
+      'concurrent-info': '#DBEAFE',
+      'concurrent-lock': '#E0E7FF',
     },
   },
   plugins: [],
