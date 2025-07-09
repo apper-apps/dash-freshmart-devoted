@@ -6112,10 +6112,10 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
               </div>
             </div>
           </div>
+</div>
         )}
       </div>
     </div>
-);
+  );
 };
-
 export default ProductManagement;
