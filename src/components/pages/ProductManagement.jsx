@@ -3117,7 +3117,6 @@ const ProductBulkUpdateTable = ({
 }) => {
   const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
   const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
-
   const handleSelectAllChange = (e) => {
     if (e.target.checked) {
       onSelectAll(products);
@@ -3291,14 +3290,10 @@ const ProductBulkUpdateTable = ({
           })}
         </tbody>
       </table>
-    </div>
+</div>
   );
 };
 
-const ImageUploadSystem = ({
-  imageData, 
-  setImageData, 
-  onImageUpload,
 const ImageUploadSystem = ({
   imageData, 
   setImageData, 
