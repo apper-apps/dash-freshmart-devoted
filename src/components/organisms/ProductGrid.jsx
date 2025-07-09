@@ -186,7 +186,7 @@ const ProductGrid = ({
         </div>
       )}
 
-      {shouldUseVirtualization ? (
+{shouldUseVirtualization ? (
         <VirtualizedProductGrid
           products={products}
           columnCount={columnCount}
@@ -196,7 +196,6 @@ const ProductGrid = ({
       ) : (
         <StandardProductGrid products={products} />
       )}
-)}
 
       {/* Performance metrics footer */}
       {typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && (
@@ -207,6 +206,6 @@ const ProductGrid = ({
         </div>
       )}
     </div>
-};
+  );
 
 export default ProductGrid;
