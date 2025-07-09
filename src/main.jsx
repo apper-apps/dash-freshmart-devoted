@@ -1,4 +1,4 @@
-import '@/index.css';
+import '@/index.css'
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "@/App";
@@ -60,6 +60,7 @@ function serializeForPostMessage(data) {
           stack: obj.stack
         };
       }
+}
       
       // Handle File objects
       if (typeof File !== 'undefined' && obj instanceof File) {
@@ -70,7 +71,6 @@ function serializeForPostMessage(data) {
           type: obj.type,
           lastModified: obj.lastModified
         };
-      }
       
       // Handle Blob objects
       if (obj instanceof Blob) {
@@ -415,7 +415,7 @@ class BackgroundSDKLoader {
     return Promise.resolve(true);
   }
       
-static setupMessageHandler() {
+  static setupMessageHandler() {
     if (typeof window === 'undefined' || this.messageHandler) {
       return;
     }
