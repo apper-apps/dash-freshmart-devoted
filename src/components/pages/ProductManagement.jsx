@@ -3029,8 +3029,6 @@ const BulkUpdateSidebar = ({
           </div>
         </div>
 
-        {/* Product Table */}
-        <div className="flex-1 overflow-auto">
 {/* Product Table */}
         <div className="flex-1 overflow-auto">
           <ProductBulkUpdateTable
@@ -3044,7 +3042,6 @@ const BulkUpdateSidebar = ({
             onDeselectAll={handleDeselectAll}
           />
         </div>
-
         {/* Enhanced Preview Results with Delta Summary */}
         {showPreview && preview.length > 0 && (
           <div className="p-4 bg-gray-50 border-t border-gray-200">
@@ -3111,14 +3108,14 @@ const ProductBulkUpdateTable = ({
   showPreview,
   previewHighlights,
   onRowSelection,
-  onSelectAll,
+onDeselectAll
 }) => {
   const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
   const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
   
   const handleSelectAllChange = (e) => {
+const handleSelectAllChange = (e) => {
     if (e.target.checked) {
-      onSelectAll(products);
       onSelectAll(products);
     } else {
       onDeselectAll();
