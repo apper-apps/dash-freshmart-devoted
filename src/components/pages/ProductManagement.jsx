@@ -6112,7 +6112,7 @@ disabled={currentPage === totalPages}
               </div>
             </div>
           </div>
-        )}
+)}
       </div>
     </div>
   );
