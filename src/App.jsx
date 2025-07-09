@@ -372,13 +372,13 @@ checkStatus();
   }, []);
 
   // Memoized SDK utilities for performance
-  const sdkUtils = useMemo(() => ({
+const sdkUtils = useMemo(() => ({
     ready: sdkReady,
     error: sdkError,
     checkStatus: checkSDKStatus
+  }), [sdkReady, sdkError, checkSDKStatus]);
 
   // Component preloader for performance
-// Component preloader for performance
   useEffect(() => {
     // Preload likely-to-be-visited components after initial render
     const preloadTimer = setTimeout(() => {
