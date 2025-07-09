@@ -16,7 +16,7 @@ import SearchBar from "@/components/molecules/SearchBar";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import BarcodeScanner from "@/components/molecules/BarcodeScanner";
 import { posService } from "@/services/api/posService";
-import { productService } from "@/services/api/productService";
+import productService from "@/services/api/productService";
 import { paymentService } from "@/services/api/paymentService";
 const POS = () => {
   const [products, setProducts] = useState([]);
