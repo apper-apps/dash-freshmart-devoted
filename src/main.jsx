@@ -147,83 +147,77 @@ if (obj instanceof Error) {
         if (typeof structuredClone !== 'undefined') {
           structuredClone(obj);
         } else {
-          // Fallback test using JSON serialization
-          JSON.stringify(obj);
+          JSON.parse(JSON.stringify(obj));
         }
         return obj;
-      } catch {
-        // If not cloneable, return safe representation
+      } catch (error) {
+        // If object is not cloneable, return a safe representation
         return { 
-          __type: 'object', 
+          __type: 'UncloneableObject', 
           constructor: obj.constructor?.name || 'Unknown',
-          toString: obj.toString?.() || 'Object'
+          error: error.message 
         };
       }
     };
     
     return serialize(data);
-    
   } catch (error) {
-    console.warn('Failed to serialize data for postMessage:', error);
-    // Return minimal safe object instead of null
+    console.warn('Complete serialization failed:', error);
     return { 
       __type: 'SerializationError', 
-      originalType: typeof data,
-      error: error.message,
-      timestamp: Date.now()
+      message: error.message,
+      dataType: typeof data 
     };
   }
 }
 
-// Deserialize received messages
+// Enhanced deserialization for postMessage compatibility
 function deserializeMessage(data) {
-  if (data === null || data === undefined) return data;
+  if (data === null || data === undefined) {
+    return data;
+  }
   
-  if (typeof data !== 'object') return data;
+  // Handle primitive types
+  if (typeof data !== 'object') {
+    return data;
+  }
+  
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(item => deserializeMessage(item));
+  }
   
   // Handle special serialized objects
   if (data.__type) {
     switch (data.__type) {
       case 'URL':
         try {
-          return new URL(data.href);
-        } catch {
-          return { originalData: data, deserializationError: 'Invalid URL' };
+          return new URL(data.__value || data.href);
+        } catch (error) {
+          console.warn('Failed to reconstruct URL object:', error);
+          return data.__originalProperties || data.__value;
         }
       case 'Date':
-        return new Date(data.value);
+        return new Date(data.__value || data.value);
+      case 'RegExp':
+        const regexMatch = data.__value.match(/^\/(.+)\/([gimuy]*)$/);
+        return regexMatch ? new RegExp(regexMatch[1], regexMatch[2]) : new RegExp(data.__value);
+      case 'Function':
+        return () => console.warn('Deserialized function called');
+      case 'File':
+        // Return file metadata (actual File can't be reconstructed)
+        return data.__value;
+      case 'Blob':
+        // Return blob metadata (actual Blob can't be reconstructed)
+        return data.__value;
+      case 'SerializationError':
+        console.warn('Deserialized property with serialization error:', data.__value);
+        return null;
       case 'Error':
         const error = new Error(data.message);
-        error.stack = data.stack;
         error.name = data.name;
+        error.stack = data.stack;
         return error;
-      case 'function':
-        return function() { console.warn(`Deserialized function ${data.name} called`); };
-      case 'File':
-        return { 
-          name: data.name, 
-          size: data.size, 
-          type: data.type,
-          lastModified: data.lastModified,
-          __isSerializedFile: true 
-        };
-      case 'Blob':
-        return { 
-          size: data.size, 
-          type: data.type,
-          __isSerializedBlob: true 
-        };
-      case 'ArrayBuffer':
-        return { 
-          byteLength: data.byteLength,
-          __isSerializedArrayBuffer: true 
-        };
-      case 'ImageData':
-        return { 
-          width: data.width, 
-          height: data.height,
-          __isSerializedImageData: true 
-        };
       case 'HTMLElement':
         return { 
           tagName: data.tagName,
@@ -232,64 +226,82 @@ function deserializeMessage(data) {
           __isSerializedHTMLElement: true 
         };
       case 'Window':
-        return { 
+        return {
           origin: data.origin,
           location: data.location,
-          __isSerializedWindow: true 
+          __isSerializedWindow: true
         };
-      case 'CircularReference':
-        return { __isCircularReference: true };
-      case 'SerializationError':
-        return data;
       default:
         return data;
     }
   }
   
-  // Handle arrays
-  if (Array.isArray(data)) {
-    return data.map(item => deserializeMessage(item));
+  // Handle regular objects
+  const result = {};
+  for (const [key, value] of Object.entries(data)) {
+    result[key] = deserializeMessage(value);
   }
   
-  // Handle objects
-  if (data.constructor === Object) {
-    const result = {};
-    for (const [key, value] of Object.entries(data)) {
-      try {
-        result[key] = deserializeMessage(value);
-      } catch (error) {
-        console.warn(`Failed to deserialize property ${key}:`, error);
-        result[key] = { deserializationError: error.message, originalValue: value };
-      }
-    }
-    return result;
-  }
-  
-  return data;
+  return result;
 }
 
-// Enhanced error handling for message operations
+// Enhanced SDK message handler
+function handleSDKMessage(event) {
+  try {
+    const data = deserializeMessage(event.data);
+    
+    // Handle different message types
+    switch (data?.type) {
+      case 'error':
+        console.error('SDK Error:', data);
+        break;
+      case 'handler-error':
+        console.error('Handler Error:', data);
+        break;
+      case 'serialization_error':
+        console.warn('Serialization Error:', data);
+        break;
+      default:
+        if (import.meta.env.DEV) {
+          console.debug('SDK Message:', data);
+        }
+    }
+  } catch (error) {
+    console.error('Failed to handle SDK message:', error);
+  }
+}
+// Enhanced error handling for different types of postMessage failures
 function handleMessageError(error, operation, data) {
-  console.error(`Error in ${operation}:`, error);
+  const errorTypes = {
+    'DataCloneError': 'Object cannot be cloned',
+    'SecurityError': 'Cross-origin security violation',
+    'InvalidStateError': 'Invalid state for operation',
+    'NotSupportedError': 'Operation not supported',
+    'NetworkError': 'Network-related error'
+  };
   
-  if (error.name === 'DataCloneError') {
-    console.warn('Data contains non-cloneable objects, attempting serialization...');
-    return true; // Indicates retry with serialization
+  const errorDescription = errorTypes[error.name] || 'Unknown error';
+  
+  // Check if data contains URL objects (common cause of DataCloneError)
+  const hasURLObjects = data && typeof data === 'object' && 
+    (data instanceof URL || 
+     JSON.stringify(data, (key, value) => {
+       if (value instanceof URL) return '[URL Object]';
+       return value;
+     }).includes('[URL Object]'));
+  
+  if (import.meta.env.DEV) {
+    console.group(`🔴 ${operation} Error: ${error.name}`);
+    console.log('Description:', errorDescription);
+    console.log('Original Error:', error.message);
+    console.log('Data Type:', typeof data);
+    console.log('Contains URL Objects:', hasURLObjects);
+    console.log('Data:', data);
+    console.groupEnd();
   }
   
-  if (error.name === 'SecurityError') {
-    console.warn('Cross-origin message blocked by security policy');
-  }
-  
-  // Log problematic data structure for debugging
-  if (data && typeof data === 'object') {
-    console.debug('Problematic data structure:', {
-      keys: Object.keys(data),
-      types: Object.keys(data).map(key => typeof data[key])
-    });
-  }
-  
-  return false;
+  // Return true if we should attempt serialization fallback
+  return ['DataCloneError', 'InvalidStateError'].includes(error.name);
 }
 // Enhanced sendSafeMessage with comprehensive error handling
 function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
@@ -329,7 +341,7 @@ function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
         console.error('Failed to send serialized message:', serializedError);
         
         // Final fallback - send minimal error info
-        try {
+try {
           const fallbackMessage = {
             type: 'error',
             error: 'Message serialization failed',
@@ -337,7 +349,13 @@ function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
             serializedError: serializedError.message,
             timestamp: Date.now(),
             messageType: typeof message,
-            hasURL: message && typeof message === 'object' && Object.values(message).some(v => v instanceof URL)
+            hasURL: message && typeof message === 'object' && Object.values(message).some(v => v instanceof URL),
+            containsUnclonableObjects: message && typeof message === 'object' && (
+              message instanceof URL ||
+              message instanceof File ||
+              message instanceof Blob ||
+              Object.values(message).some(v => v instanceof URL || v instanceof File || v instanceof Blob)
+            )
           };
           targetWindow.postMessage(fallbackMessage, targetOrigin);
           return true;
@@ -392,8 +410,8 @@ class BackgroundSDKLoader {
     
     window.addEventListener('message', this.messageHandler);
     
-    // Also intercept any postMessage calls to ensure they're safe
-const originalPostMessage = window.postMessage;
+// Also intercept any postMessage calls to ensure they're safe
+    const originalPostMessage = window.postMessage;
     window.postMessage = function(message, targetOrigin, transfer) {
       try {
         return originalPostMessage.call(this, message, targetOrigin, transfer);
