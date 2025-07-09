@@ -104,23 +104,23 @@ function createLazyComponent(importFn, componentName) {
     );
   };
 }
-
 // Lazy load heavy components with error handling
-const PayrollManagement = createLazyComponent(() => import('@/components/pages/PayrollManagement'), 'Payroll Management');
-const AdminDashboard = createLazyComponent(() => import('@/components/pages/AdminDashboard'), 'Admin Dashboard');
-const ProductManagement = createLazyComponent(() => import('@/components/pages/ProductManagement'), 'Product Management');
-const Analytics = createLazyComponent(() => import('@/components/pages/Analytics'), 'Analytics');
-const FinancialDashboard = createLazyComponent(() => import('@/components/pages/FinancialDashboard'), 'Financial Dashboard');
-const POS = createLazyComponent(() => import('@/components/pages/POS'), 'POS');
-const PaymentManagement = createLazyComponent(() => import('@/components/pages/PaymentManagement'), 'Payment Management');
-const DeliveryTracking = createLazyComponent(() => import('@/components/pages/DeliveryTracking'), 'Delivery Tracking');
-const AIGenerate = createLazyComponent(() => import('@/components/pages/AIGenerate'), 'AI Generate');
-const Category = createLazyComponent(() => import('@/components/pages/Category'), 'Category');
-const Orders = createLazyComponent(() => import('@/components/pages/Orders'), 'Orders');
-const OrderTracking = createLazyComponent(() => import('@/components/pages/OrderTracking'), 'Order Tracking');
-const Account = createLazyComponent(() => import('@/components/pages/Account'), 'Account');
-const Home = createLazyComponent(() => import('@/components/pages/Home'), 'Home');
-const Checkout = createLazyComponent(() => import('@/components/pages/Checkout'), 'Checkout');
+const LazyPayrollManagement = createLazyComponent(() => import('@/components/pages/PayrollManagement'), 'Payroll Management');
+const LazyAdminDashboard = createLazyComponent(() => import('@/components/pages/AdminDashboard'), 'Admin Dashboard');
+const LazyProductManagement = createLazyComponent(() => import('@/components/pages/ProductManagement'), 'Product Management');
+const LazyAnalytics = createLazyComponent(() => import('@/components/pages/Analytics'), 'Analytics');
+const LazyFinancialDashboard = createLazyComponent(() => import('@/components/pages/FinancialDashboard'), 'Financial Dashboard');
+const LazyPOS = createLazyComponent(() => import('@/components/pages/POS'), 'POS');
+const LazyPaymentManagement = createLazyComponent(() => import('@/components/pages/PaymentManagement'), 'Payment Management');
+const LazyDeliveryTracking = createLazyComponent(() => import('@/components/pages/DeliveryTracking'), 'Delivery Tracking');
+const LazyAIGenerate = createLazyComponent(() => import('@/components/pages/AIGenerate'), 'AI Generate');
+const LazyCategory = createLazyComponent(() => import('@/components/pages/Category'), 'Category');
+const LazyOrders = createLazyComponent(() => import('@/components/pages/Orders'), 'Orders');
+const LazyOrderTracking = createLazyComponent(() => import('@/components/pages/OrderTracking'), 'Order Tracking');
+const LazyAccount = createLazyComponent(() => import('@/components/pages/Account'), 'Account');
+const LazyHome = createLazyComponent(() => import('@/components/pages/Home'), 'Home');
+const LazyCheckout = createLazyComponent(() => import('@/components/pages/Checkout'), 'Checkout');
+// Enhanced error boundary component with retry mechanism
 // Enhanced error boundary component with retry mechanism
 const LazyComponentErrorBoundary = ({ children, fallback, componentName }) => {
   const [hasError, setHasError] = useState(false);
@@ -291,9 +291,10 @@ checkStatus();
   }), [sdkReady, sdkError, checkSDKStatus]);
 
   // Component preloader for performance
+// Component preloader for performance
   useEffect(() => {
     // Preload likely-to-be-visited components after initial render
-const preloadTimer = setTimeout(() => {
+    const preloadTimer = setTimeout(() => {
       import("@/components/pages/Category").catch(() => {});
       import("@/components/pages/Orders").catch(() => {});
       import("@/components/pages/Account").catch(() => {});
@@ -315,7 +316,7 @@ const preloadTimer = setTimeout(() => {
               </div>
             )}
             
-            <Routes>
+<Routes>
               <Route path="/" element={<Layout />}>
                 {/* Core routes - no lazy loading */}
                 <Route index element={<Home />} />
@@ -326,86 +327,86 @@ const preloadTimer = setTimeout(() => {
                 {/* Lazy loaded routes */}
                 <Route path="category/:categoryName" element={
                   <Suspense fallback={<Loading type="page" />}>
-                    <Category />
+                    <LazyCategory />
                   </Suspense>
                 } />
-                <Route path="orders" element={
+<Route path="orders" element={
                   <Suspense fallback={<Loading type="page" />}>
-                    <Orders />
+                    <LazyOrders />
                   </Suspense>
                 } />
                 <Route path="orders/:orderId" element={
                   <Suspense fallback={<Loading type="page" />}>
-                    <OrderTracking />
+                    <LazyOrderTracking />
                   </Suspense>
                 } />
                 <Route path="account" element={
                   <Suspense fallback={<Loading type="page" />}>
-                    <Account />
+                    <LazyAccount />
                   </Suspense>
                 } />
                 
                 {/* Heavy admin routes - lazy loaded */}
-                <Route path="admin" element={
+<Route path="admin" element={
                   <LazyComponentErrorBoundary componentName="Admin Dashboard">
                     <Suspense fallback={<EnhancedLoading message="Loading Admin Dashboard..." componentName="Admin Dashboard" />}>
-                      <AdminDashboard />
+                      <LazyAdminDashboard />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="admin/products" element={
                   <LazyComponentErrorBoundary componentName="Product Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Product Management..." componentName="Product Management" />}>
-                      <ProductManagement />
-</Suspense>
+                      <LazyProductManagement />
+                    </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="analytics" element={
                   <LazyComponentErrorBoundary componentName="Analytics">
                     <Suspense fallback={<EnhancedLoading message="Loading Analytics..." componentName="Analytics" />}>
-                      <Analytics />
+                      <LazyAnalytics />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="financial" element={
                   <LazyComponentErrorBoundary componentName="Financial Dashboard">
                     <Suspense fallback={<EnhancedLoading message="Loading Financial Dashboard..." componentName="Financial Dashboard" />}>
-                      <FinancialDashboard />
+                      <LazyFinancialDashboard />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="pos" element={
                   <LazyComponentErrorBoundary componentName="POS System">
                     <Suspense fallback={<EnhancedLoading message="Loading POS System..." componentName="POS System" />}>
-                      <POS />
+                      <LazyPOS />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
-                <Route path="payments" element={
+<Route path="payments" element={
                   <LazyComponentErrorBoundary componentName="Payment Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Payment Management..." componentName="Payment Management" />}>
-                      <PaymentManagement />
+                      <LazyPaymentManagement />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="payroll" element={
                   <LazyComponentErrorBoundary componentName="Payroll Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Payroll Management..." componentName="Payroll Management" />}>
-                      <PayrollManagement />
+                      <LazyPayrollManagement />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="delivery" element={
                   <LazyComponentErrorBoundary componentName="Delivery Tracking">
                     <Suspense fallback={<EnhancedLoading message="Loading Delivery Tracking..." componentName="Delivery Tracking" />}>
-                      <DeliveryTracking />
+                      <LazyDeliveryTracking />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
                 <Route path="ai-generate" element={
                   <LazyComponentErrorBoundary componentName="AI Generate">
                     <Suspense fallback={<EnhancedLoading message="Loading AI Generate..." componentName="AI Generate" />}>
-                      <AIGenerate />
+                      <LazyAIGenerate />
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
