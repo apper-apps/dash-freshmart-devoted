@@ -1,5 +1,3 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 // ProductService class definition
@@ -719,11 +717,10 @@ class ProductService {
     else if (margin > 20) health = 'good';
     else if (margin > 10) health = 'fair';
     
-    return {
+return {
       health,
       margin,
       recommendation: margin < 10 ? 'Consider increasing price or reducing cost' : 'Healthy profit margin'
-recommendation: margin < 10 ? 'Consider increasing price or reducing cost' : 'Healthy profit margin'
     };
   }
 }
