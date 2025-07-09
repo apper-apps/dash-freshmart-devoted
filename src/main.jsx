@@ -10,62 +10,73 @@ const performanceMonitor = {
   start: performance.now(),
   marks: {}
 };
-// Enhanced serialization utility with circular reference handling
+// Enhanced serialization for postMessage - handle all non-cloneable objects
 function serializeForPostMessage(data) {
+  if (data === null || data === undefined) return data;
+  
   try {
     // Track circular references
     const seen = new WeakSet();
     
-    // Convert non-serializable objects to serializable format
-    const serialized = JSON.parse(JSON.stringify(data, (key, value) => {
+    const serialize = (obj) => {
+      // Handle primitive types
+      if (typeof obj !== 'object') return obj;
+      
+      // Handle null
+      if (obj === null) return obj;
+      
       // Handle circular references
-      if (typeof value === 'object' && value !== null) {
-        if (seen.has(value)) {
-          return { __type: 'CircularReference', key };
-        }
-        seen.add(value);
+      if (seen.has(obj)) {
+        return { __type: 'CircularReference' };
       }
+      seen.add(obj);
       
       // Handle URL objects
-      if (value instanceof URL) {
-        return { __type: 'URL', href: value.href, origin: value.origin };
+      if (obj instanceof URL) {
+        return { __type: 'URL', href: obj.href, origin: obj.origin };
       }
       
       // Handle Date objects
-      if (value instanceof Date) {
-        return { __type: 'Date', timestamp: value.getTime() };
+      if (obj instanceof Date) {
+        return { __type: 'Date', value: obj.toISOString() };
       }
       
-      // Handle RegExp objects
-      if (value instanceof RegExp) {
-        return { __type: 'RegExp', source: value.source, flags: value.flags };
-      }
-      
-      // Handle Error objects with all properties
-      if (value instanceof Error) {
-        return { 
-          __type: 'Error', 
-          name: value.name,
-          message: value.message, 
-          stack: value.stack,
-          cause: value.cause
-        };
+      // Handle Error objects
+      if (obj instanceof Error) {
+        return { __type: 'Error', message: obj.message, stack: obj.stack };
       }
       
       // Handle functions
-      if (typeof value === 'function') {
-        return { __type: 'Function', name: value.name || 'anonymous' };
+      if (typeof obj === 'function') {
+        return { __type: 'function', name: obj.name || 'anonymous' };
       }
       
-      // Handle undefined explicitly
-      if (value === undefined) {
-        return { __type: 'Undefined' };
+      // Handle arrays
+      if (Array.isArray(obj)) {
+        return obj.map(item => serialize(item));
       }
       
-      return value;
-    }));
+      // Handle plain objects
+      if (obj.constructor === Object) {
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+          result[key] = serialize(value);
+        }
+        return result;
+      }
+      
+      // Handle other objects (DOM elements, etc.)
+      try {
+        // Test if object is cloneable
+        structuredClone(obj);
+        return obj;
+      } catch {
+        return { __type: 'object', constructor: obj.constructor?.name || 'Unknown' };
+      }
+    };
     
-    return serialized;
+    return serialize(data);
+    
   } catch (error) {
     console.warn('Failed to serialize data for postMessage:', error);
     // Return minimal safe object instead of null
@@ -78,7 +89,72 @@ function serializeForPostMessage(data) {
   }
 }
 
-// Enhanced message handler for external SDK communication
+// Deserialize received messages
+function deserializeMessage(data) {
+  if (data === null || data === undefined) return data;
+  
+  if (typeof data !== 'object') return data;
+  
+  // Handle special serialized objects
+  if (data.__type) {
+    switch (data.__type) {
+      case 'URL':
+        return new URL(data.href);
+      case 'Date':
+        return new Date(data.value);
+      case 'Error':
+        const error = new Error(data.message);
+        error.stack = data.stack;
+        return error;
+      case 'function':
+        return function() { console.warn(`Deserialized function ${data.name} called`); };
+      default:
+        return data;
+    }
+  }
+  
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(item => deserializeMessage(item));
+  }
+  
+  // Handle objects
+  if (data.constructor === Object) {
+    const result = {};
+    for (const [key, value] of Object.entries(data)) {
+      result[key] = deserializeMessage(value);
+    }
+    return result;
+  }
+  
+  return data;
+}
+
+// Enhanced error handling for message operations
+function handleMessageError(error, operation, data) {
+  console.error(`Error in ${operation}:`, error);
+  
+  if (error.name === 'DataCloneError') {
+    console.warn('Data contains non-cloneable objects, attempting serialization...');
+    return true; // Indicates retry with serialization
+  }
+  
+  if (error.name === 'SecurityError') {
+    console.warn('Cross-origin message blocked by security policy');
+  }
+  
+  // Log problematic data structure for debugging
+  if (data && typeof data === 'object') {
+    console.debug('Problematic data structure:', {
+      keys: Object.keys(data),
+      types: Object.keys(data).map(key => typeof data[key])
+    });
+  }
+  
+  return false;
+}
+
+// Enhanced message handler with deserialization
 function handleSDKMessage(event) {
   try {
     // Validate origin for security
@@ -86,118 +162,95 @@ function handleSDKMessage(event) {
       return;
     }
     
-    // Handle SDK messages safely
-    if (event.data && typeof event.data === 'object') {
-      const serializedData = serializeForPostMessage(event.data);
-      if (serializedData) {
-        // Process the serialized data
-        console.log('SDK message received:', serializedData);
+    // Deserialize the message data
+    const deserializedData = deserializeMessage(event.data);
+    
+    // Process the message
+    if (deserializedData && typeof deserializedData === 'object') {
+      console.log('Received SDK message:', deserializedData);
+      
+      // Handle different message types
+      if (deserializedData.type === 'sdk-ready') {
+        window.apperSDK = { isInitialized: true, ...deserializedData.sdk };
       }
     }
   } catch (error) {
-    console.warn('Error handling SDK message:', error);
+    console.error('Error handling SDK message:', error);
+  }
+}
+
+// Enhanced sendSafeMessage with proper serialization
+function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
+  if (!targetWindow || !message) return;
+  
+  try {
+    // First attempt - try sending directly
+    targetWindow.postMessage(message, targetOrigin);
+  } catch (error) {
+    // If DataCloneError, serialize and retry
+    if (handleMessageError(error, 'postMessage', message)) {
+      try {
+        const serializedMessage = serializeForPostMessage(message);
+        targetWindow.postMessage(serializedMessage, targetOrigin);
+      } catch (serializedError) {
+        console.error('Failed to send serialized message:', serializedError);
+        // Final fallback - send minimal error info
+        try {
+          targetWindow.postMessage({
+            error: 'Message serialization failed',
+            type: 'error'
+          }, targetOrigin);
+        } catch (finalError) {
+          console.error('All message sending attempts failed:', finalError);
+        }
+      }
+    }
   }
 }
 
 class BackgroundSDKLoader {
-    static messageHandler = null;
+  static messageHandler = null;
+  
+  static loadInBackground() {
+    // Simulate loading SDK
+    return Promise.resolve(true);
+  }
+      
+static setupMessageHandler() {
+    if (typeof window === 'undefined' || this.messageHandler) {
+      return;
+    }
     
-    static async loadInBackground() {
+    this.messageHandler = (event) => {
       try {
-        await this.loadServices();
-        await this.initializeWhenReady();
-        return true;
+        handleSDKMessage(event);
       } catch (error) {
-        console.error('Background SDK loading failed:', error);
-        return false;
+        console.warn('Message handler error:', error);
       }
-    }
+    };
     
-    static async loadServices() {
-      // Load services in background
-      return new Promise((resolve) => {
-        setTimeout(resolve, 100);
-      });
-    }
-    
-    static sendSafeMessage(targetWindow, message, targetOrigin = "*") {
-      if (!targetWindow || typeof targetWindow.postMessage !== 'function') {
-        console.warn('Invalid target window for postMessage');
-        return false;
-      }
-      
-      try {
-        // Always serialize the message to prevent DataCloneError
-        const serializedMessage = serializeForPostMessage(message);
-        
-        if (serializedMessage) {
-          targetWindow.postMessage(serializedMessage, targetOrigin);
-          return true;
-        } else {
-          console.warn('Message serialization returned null, attempting fallback');
-          // Fallback: try sending a minimal message
-          targetWindow.postMessage({
-            __type: 'FallbackMessage',
-            originalMessageType: typeof message,
-            timestamp: Date.now(),
-            error: 'Original message could not be serialized'
-          }, targetOrigin);
-          return false;
-        }
-      } catch (error) {
-        console.error('Failed to send message:', error);
-        
-        // Last resort: try sending error notification
-        try {
-          targetWindow.postMessage({
-            __type: 'MessageError',
-            error: error.message,
-            timestamp: Date.now()
-          }, targetOrigin);
-        } catch (fallbackError) {
-          console.error('Even fallback message failed:', fallbackError);
-        }
-        
-        return false;
-      }
-    }
-    
-    static setupMessageHandler() {
-      if (typeof window === 'undefined' || this.messageHandler) {
-        return;
-      }
-      
-      this.messageHandler = (event) => {
-        try {
-          handleSDKMessage(event);
-        } catch (error) {
-          console.warn('Message handler error:', error);
-        }
-      };
-      
-      window.addEventListener('message', this.messageHandler);
-    }
-    
-    static cleanup() {
-      if (this.messageHandler && typeof window !== 'undefined') {
-        window.removeEventListener('message', this.messageHandler);
-        this.messageHandler = null;
-      }
-    }
-    
-    static async initializeWhenReady() {
-      // Wait for DOM to be ready
-      return new Promise((resolve) => {
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', resolve);
-        } else {
-          resolve();
-        }
-      });
+    window.addEventListener('message', this.messageHandler);
+  }
+  
+  static cleanup() {
+    if (this.messageHandler && typeof window !== 'undefined') {
+      window.removeEventListener('message', this.messageHandler);
+      this.messageHandler = null;
     }
   }
-
-// Enhanced app initialization with proper error handling
+  
+  static async initializeWhenReady() {
+    // Wait for DOM to be ready
+    return new Promise((resolve) => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve);
+      } else {
+        resolve();
+      }
+    });
+  }
+}
+    
 // Enhanced app initialization with proper error handling
 async function initializeApp() {
   try {
@@ -209,6 +262,7 @@ async function initializeApp() {
     if (loaded) {
       await BackgroundSDKLoader.initializeWhenReady();
     }
+    
     // Get root element
     const rootElement = document.getElementById('root');
     if (!rootElement) {
