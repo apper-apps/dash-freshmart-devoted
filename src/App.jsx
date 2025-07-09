@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
-import Error from "@/components/ui/Error";
+import ErrorComponent from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import PayrollManagement from "@/components/pages/PayrollManagement";
 import AdminDashboard from "@/components/pages/AdminDashboard";
@@ -125,10 +125,10 @@ function createLazyComponent(importFn, componentName) {
     })
   );
 
-  return function WrappedLazyComponent(props) {
+return function WrappedLazyComponent(props) {
     return (
       <LazyComponentErrorBoundary 
-        fallback={<Error message={`Error loading ${componentName}`} />}
+        fallback={<ErrorComponent message={`Error loading ${componentName}`} />}
         componentName={componentName}
       >
         <Suspense fallback={<EnhancedLoading message={`Loading ${componentName}...`} componentName={componentName} />}>
