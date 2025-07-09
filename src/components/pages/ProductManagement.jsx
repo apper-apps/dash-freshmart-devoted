@@ -323,11 +323,10 @@ const [formData, setFormData] = useState({
         return;
       }
 
-      if (price > 100000) {
+if (price > 100000) {
         toast.error("Price cannot exceed Rs. 100,000");
         return;
       }
-}
 
       // Discount validation with guards
       if (discountValue > 0) {
