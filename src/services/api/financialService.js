@@ -1,9 +1,7 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import { orderService } from "@/services/api/orderService";
-import { productService } from "@/services/api/productService";
+import productService from "@/services/api/productService";
 
-// Mock expense data with proper Id structure
+// Mock expense data
 const mockExpenses = [
   {
     Id: 1,
@@ -180,6 +178,10 @@ class FinancialService {
     this.vendorIdCounter = Math.max(...mockVendors.map(v => v.Id), 0) + 1;
     this.vendorPayments = [...mockVendorPayments];
     this.vendorPaymentIdCounter = Math.max(...mockVendorPayments.map(p => p.Id), 0) + 1;
+  }
+
+  delay(ms = 300) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   async getFinancialMetrics(days = 30) {
@@ -1022,14 +1024,12 @@ class FinancialService {
         overdueCount: payments.filter(p => 
           p.status === 'overdue' || (p.status === 'pending' && new Date(p.dueDate) < new Date())
         ).length
-      };
-} catch (error) {
+};
+    } catch (error) {
       throw new Error('Failed to get vendor payment analytics: ' + error.message);
     }
   }
-delay(ms = 300) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+
   // Cash Flow Analysis Methods
   async getCashFlowAnalytics(days = 30) {
     await this.delay();
@@ -1407,8 +1407,9 @@ delay(ms = 300) {
           cumulativeCashFlow,
           scheduledPayments: scheduledPayments.length > 0 ? scheduledPayments : null
         });
-      }
-return projections;
+}
+
+      return projections;
     } catch (error) {
       throw new Error('Failed to get cash flow projections: ' + error.message);
     }
