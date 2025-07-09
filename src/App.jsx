@@ -424,7 +424,7 @@ checkStatus();
                   </Suspense>
                 } />
                 
-                {/* Heavy admin routes - lazy loaded */}
+{/* Heavy admin routes - lazy loaded */}
                 <Route path="admin" element={
                   <LazyComponentErrorBoundary componentName="Admin Dashboard">
                     <Suspense fallback={<EnhancedLoading message="Loading Admin Dashboard..." componentName="Admin Dashboard" />}>
@@ -432,6 +432,66 @@ checkStatus();
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
+                
+                {/* Admin Dashboard Sub-routes */}
+                <Route path="admin/manage-products" element={
+                  <LazyComponentErrorBoundary componentName="Product Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Product Management..." componentName="Product Management" />}>
+                      <LazyProductManagement />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/view-orders" element={
+                  <LazyComponentErrorBoundary componentName="Orders">
+                    <Suspense fallback={<EnhancedLoading message="Loading Orders..." componentName="Orders" />}>
+                      <LazyOrders />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/ai-generate" element={
+                  <LazyComponentErrorBoundary componentName="AI Generate">
+                    <Suspense fallback={<EnhancedLoading message="Loading AI Generate..." componentName="AI Generate" />}>
+                      <LazyAIGenerate />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/payment-management" element={
+                  <LazyComponentErrorBoundary componentName="Payment Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Payment Management..." componentName="Payment Management" />}>
+                      <LazyPaymentManagement />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/analytics" element={
+                  <LazyComponentErrorBoundary componentName="Analytics">
+                    <Suspense fallback={<EnhancedLoading message="Loading Analytics..." componentName="Analytics" />}>
+                      <LazyAnalytics />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/financial-dashboard" element={
+                  <LazyComponentErrorBoundary componentName="Financial Dashboard">
+                    <Suspense fallback={<EnhancedLoading message="Loading Financial Dashboard..." componentName="Financial Dashboard" />}>
+                      <LazyFinancialDashboard />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/payment-verification" element={
+                  <LazyComponentErrorBoundary componentName="Payment Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Payment Verification..." componentName="Payment Management" />}>
+                      <LazyPaymentManagement />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/delivery-tracking" element={
+                  <LazyComponentErrorBoundary componentName="Delivery Tracking">
+                    <Suspense fallback={<EnhancedLoading message="Loading Delivery Tracking..." componentName="Delivery Tracking" />}>
+                      <LazyDeliveryTracking />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                
+                {/* Legacy routes for backward compatibility */}
                 <Route path="admin/products" element={
                   <LazyComponentErrorBoundary componentName="Product Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Product Management..." componentName="Product Management" />}>
