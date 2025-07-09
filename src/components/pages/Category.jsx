@@ -9,17 +9,16 @@ import ProductService from "@/services/api/productService";
 const Category = () => {
   const { categoryName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState([]);
+const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(categoryName || 'All');
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  
-  const productService = new ProductService();
+const productService = ProductService;
 
-  const categories = ['All', 'Groceries', 'Meat', 'Fruits', 'Vegetables'];
+  const categories = ["All", "Groceries", "Meat", "Dairy", "Produce"];
   const sortOptions = [
     { value: 'name', label: 'Name' },
     { value: 'price-low', label: 'Price: Low to High' },
