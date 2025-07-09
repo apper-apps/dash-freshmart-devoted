@@ -26,6 +26,7 @@ import Checkout from "@/components/pages/Checkout";
 import FinancialDashboard from "@/components/pages/FinancialDashboard";
 import Home from "@/components/pages/Home";
 // Core components - direct import for immediate availability
+// Core components - direct import for immediate availability
 // Enhanced lazy loading with better error handling, retry logic, and module preloading
 function createLazyComponent(importFn, componentName) {
   const LazyComponent = lazy(() => 
@@ -104,29 +105,14 @@ function createLazyComponent(importFn, componentName) {
   };
 }
 
-function LazyComponentErrorBoundary({ children, fallback, componentName }) {
-  const [hasError, setHasError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
-
-const handleRetry = useCallback(() => {
-      if (retryCount < maxRetries) {
-        setHasError(false);
-        setRetryCount(prev => prev + 1);
-        // Force reload the component
-      }
-    }, [retryCount, maxRetries]);
-  
-    return children;
-  };
 // Lazy load heavy components with error handling
+const PayrollManagement = createLazyComponent(() => import('@/components/pages/PayrollManagement'), 'Payroll Management');
 const AdminDashboard = createLazyComponent(() => import('@/components/pages/AdminDashboard'), 'Admin Dashboard');
 const ProductManagement = createLazyComponent(() => import('@/components/pages/ProductManagement'), 'Product Management');
 const Analytics = createLazyComponent(() => import('@/components/pages/Analytics'), 'Analytics');
 const FinancialDashboard = createLazyComponent(() => import('@/components/pages/FinancialDashboard'), 'Financial Dashboard');
 const POS = createLazyComponent(() => import('@/components/pages/POS'), 'POS');
 const PaymentManagement = createLazyComponent(() => import('@/components/pages/PaymentManagement'), 'Payment Management');
-const PayrollManagement = createLazyComponent(() => import('@/components/pages/PayrollManagement'), 'Payroll Management');
 const DeliveryTracking = createLazyComponent(() => import('@/components/pages/DeliveryTracking'), 'Delivery Tracking');
 const AIGenerate = createLazyComponent(() => import('@/components/pages/AIGenerate'), 'AI Generate');
 const Category = createLazyComponent(() => import('@/components/pages/Category'), 'Category');
