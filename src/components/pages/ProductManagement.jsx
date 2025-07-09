@@ -3556,41 +3556,14 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
             </div>
           </div>
         )}
-      </div>
+</div>
     </div>
   );
-);
 };
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button
-                type="button"
-                variant="secondary"
-                icon="Eye"
-                onClick={generatePreview}
-                className="w-full"
-                disabled={
-                  (updateData.strategy !== 'range' && !updateData.value) ||
-                  (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice))
-                }
-              >
-                Preview Changes
-              </Button>
-              
-              <Button
-                type="button"
-                variant="primary"
-                icon="Save"
-                onClick={handleSubmit}
-                className="w-full"
-                disabled={!showPreview || preview.length === 0}
-              >
-                Apply Updates ({preview.length})
-              </Button>
-            </div>
+</div>
 
-{/* Switch to Modal */}
+            {/* Switch to Modal */}
             <div className="pt-4 border-t border-gray-200">
               <Button
                 type="button"
