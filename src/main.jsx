@@ -51,15 +51,15 @@ function serializeForPostMessage(data) {
       }
       
       // Handle Error objects
+// Handle Error objects
       if (obj instanceof Error) {
         return { 
           __type: 'Error', 
-          message: obj.message, 
-          stack: obj.stack,
-          name: obj.name
+          message: obj.message,
+          name: obj.name,
+          stack: obj.stack
         };
       }
-}
       
       // Handle File objects
       if (typeof File !== 'undefined' && obj instanceof File) {
@@ -70,6 +70,7 @@ function serializeForPostMessage(data) {
           type: obj.type,
           lastModified: obj.lastModified
         };
+      }
       
       // Handle Blob objects
       if (obj instanceof Blob) {
@@ -79,7 +80,6 @@ function serializeForPostMessage(data) {
           type: obj.type
         };
       }
-      
       // Handle ArrayBuffer objects
       if (obj instanceof ArrayBuffer) {
         return { 

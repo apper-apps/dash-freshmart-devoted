@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Heart, Menu, Search, ShoppingCart, User, X } from "lucide-react";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { ShoppingCart, User, Search, Menu, X, Bell } from 'lucide-react';
+import { showNotification } from '@/store/notificationSlice.jsx';
 import { clearCart } from "@/store/cartSlice";
 import { addNotification, markAsRead } from "@/store/notificationSlice";
 import ApperIcon from "@/components/ApperIcon";

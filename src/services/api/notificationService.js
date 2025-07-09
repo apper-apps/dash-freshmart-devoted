@@ -1,8 +1,10 @@
-// Mock data for notification counts
+import { store } from "@/store/index.jsx";
+import { clearAllNotifications, clearNotification, showNotification } from "@/store/notificationSlice.jsx";
+import { toast } from "react-toastify";
+import React from "react";
+
+// Service for managing notifications
 const mockNotificationCounts = {
-  payments: 5,
-  orders: 3,
-  products: 12,
   pos: 2,
   financial: 1,
   ai: 0,

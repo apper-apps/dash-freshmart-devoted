@@ -1,9 +1,9 @@
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 import { 
-  addToCart as addToCartAction, 
-  removeFromCart as removeFromCartAction, 
-  updateQuantity as updateQuantityAction, 
+  addToCart as addToCartAction,
   clearCart as clearCartAction,
+  removeFromCart as removeFromCartAction,
+  updateQuantity as updateQuantityAction,
   setLoading,
   selectCartItems,
   selectCartTotal,
@@ -11,7 +11,10 @@ import {
   selectCartLoading,
   selectIsProductInCart,
   selectProductQuantityInCart
-} from '@/store/cartSlice';
+} from "@/store/cartSlice";
+import { showNotification } from "@/store/notificationSlice";
+import { toast } from "react-toastify";
+import React from "react";
 
 export const useCart = () => {
   const dispatch = useDispatch();

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { Minus, Plus, Trash2 } from "lucide-react";
-import { toast } from "react-toastify";
-import { removeFromCart, updateQuantity } from "@/store/cartSlice.jsx";
+import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { Plus, Minus, Trash2 } from 'lucide-react';
+import { updateQuantity, removeFromCart } from '@/store/cartSlice.jsx';
+import { toast } from 'react-toastify';
 import { addNotification } from "@/store/notificationSlice.jsx";
 import { updateQuantityWithValidation } from "@/store/cartSlice";
 import ApperIcon from "@/components/ApperIcon";

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { ArrowLeft, CreditCard, Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, CheckCircle, CreditCard, MapPin, Phone, User } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { clearCart } from "@/store/cartSlice";
 import { addNotification } from "@/store/notificationSlice";
 import ApperIcon from "@/components/ApperIcon";
