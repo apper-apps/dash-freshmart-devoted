@@ -196,7 +196,7 @@ return (
         <StandardProductGrid products={products} />
 )}
       {/* Performance metrics footer */}
-      {(typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') && (
+      {(import.meta.env?.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost')) && (
         <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
           Products: {products.length} | Columns: {columnCount} | 
           Virtualized: {shouldUseVirtualization ? 'Yes' : 'No'} | 
