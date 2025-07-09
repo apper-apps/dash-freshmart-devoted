@@ -362,9 +362,10 @@ const [formData, setFormData] = useState({
         return;
       }
 
-      if (purchasePrice > 0 && price > purchasePrice * 10) {
+if (purchasePrice > 0 && price > purchasePrice * 10) {
         toast.error("Price cannot be more than 10 times the purchase price");
         return;
+      }
 
       // Prepare product data with proper validation
       const productData = {
