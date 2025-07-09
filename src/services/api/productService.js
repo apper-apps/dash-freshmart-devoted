@@ -1,5 +1,3 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 // ProductService class definition
@@ -764,6 +762,4 @@ export default {
   roundToDecimals: productServiceInstance.roundToDecimals.bind(productServiceInstance),
   calculateMarginPercentage: productServiceInstance.calculateMarginPercentage.bind(productServiceInstance)
 };
-
 export const productService = productServiceInstance;
-};

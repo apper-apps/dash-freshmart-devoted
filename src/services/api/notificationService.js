@@ -1,8 +1,6 @@
 import { store } from "@/store/index.jsx";
-import { clearAllNotifications, clearNotification, showNotification } from "@/store/notificationSlice.jsx";
+import { clearAllNotifications, clearNotification, showNotification } from "@/store/notificationSlice.js";
 import { toast } from "react-toastify";
-import React from "react";
-
 // Service for managing notifications
 const mockNotificationCounts = {
   pos: 2,
