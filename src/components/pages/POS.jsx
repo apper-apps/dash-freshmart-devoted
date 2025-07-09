@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Clock, CreditCard, DollarSign, Minus, Package, Plus, Receipt, Scan, Search, ShoppingCart, TrendingUp, Users, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { addToCart, clearCart, removeFromCart, updateQuantity } from "@/store/cartSlice.js";
-import { addNotification } from "@/store/notificationSlice.js";
+import { addNotification } from "@/store/notificationSlice";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
