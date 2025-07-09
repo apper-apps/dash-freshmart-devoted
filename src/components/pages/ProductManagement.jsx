@@ -3110,11 +3110,10 @@ const ProductBulkUpdateTable = ({
   onSelectAll,
   onDeselectAll
 }) => {
-  const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
+const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
   const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
   
   const handleSelectAllChange = (e) => {
-const handleSelectAllChange = (e) => {
     if (e.target.checked) {
       onSelectAll(products);
     } else {
