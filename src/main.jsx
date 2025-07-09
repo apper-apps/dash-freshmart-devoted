@@ -31,9 +31,18 @@ function serializeForPostMessage(data) {
       }
       seen.add(obj);
       
-      // Handle URL objects
+      // Handle URL objects (main cause of DataCloneError)
       if (obj instanceof URL) {
-        return { __type: 'URL', href: obj.href, origin: obj.origin };
+        return { 
+          __type: 'URL', 
+          href: obj.href, 
+          origin: obj.origin,
+          protocol: obj.protocol,
+          hostname: obj.hostname,
+          pathname: obj.pathname,
+          search: obj.search,
+          hash: obj.hash
+        };
       }
       
       // Handle Date objects
@@ -43,12 +52,75 @@ function serializeForPostMessage(data) {
       
       // Handle Error objects
       if (obj instanceof Error) {
-        return { __type: 'Error', message: obj.message, stack: obj.stack };
+        return { 
+          __type: 'Error', 
+          message: obj.message, 
+          stack: obj.stack,
+          name: obj.name
+        };
+      }
+}
+      
+      // Handle File objects
+      if (typeof File !== 'undefined' && obj instanceof File) {
+        return { 
+          __type: 'File', 
+          name: obj.name, 
+          size: obj.size, 
+          type: obj.type,
+          lastModified: obj.lastModified
+        };
+      
+      // Handle Blob objects
+      if (obj instanceof Blob) {
+        return { 
+          __type: 'Blob', 
+          size: obj.size, 
+          type: obj.type
+        };
       }
       
+      // Handle ArrayBuffer objects
+      if (obj instanceof ArrayBuffer) {
+        return { 
+          __type: 'ArrayBuffer', 
+          byteLength: obj.byteLength
+        };
+      }
+      
+      // Handle ImageData objects
+      if (typeof ImageData !== 'undefined' && obj instanceof ImageData) {
+        return { 
+          __type: 'ImageData', 
+          width: obj.width, 
+          height: obj.height
+        };
+      }
+      
+      // Handle DOM elements
+      if (typeof HTMLElement !== 'undefined' && obj instanceof HTMLElement) {
+        return { 
+          __type: 'HTMLElement', 
+          tagName: obj.tagName,
+          id: obj.id,
+          className: obj.className
+        };
+      }
+// Handle Window objects
+      if (typeof window !== 'undefined' && obj === window) {
+        return { 
+          __type: 'Window',
+          origin: obj.origin,
+          location: obj.location?.href
+        };
+      }
       // Handle functions
       if (typeof obj === 'function') {
-        return { __type: 'function', name: obj.name || 'anonymous' };
+        return { 
+          __type: 'function', 
+          name: obj.name || 'anonymous',
+          length: obj.length
+        };
       }
       
       // Handle arrays
@@ -60,18 +132,33 @@ function serializeForPostMessage(data) {
       if (obj.constructor === Object) {
         const result = {};
         for (const [key, value] of Object.entries(obj)) {
-          result[key] = serialize(value);
+          try {
+            result[key] = serialize(value);
+          } catch (error) {
+            console.warn(`Failed to serialize property ${key}:`, error);
+            result[key] = { __type: 'SerializationError', key, error: error.message };
+          }
         }
         return result;
       }
       
-      // Handle other objects (DOM elements, etc.)
+// Handle other objects (try cloning first)
       try {
-        // Test if object is cloneable
-        structuredClone(obj);
+        // Test if object is cloneable - use structuredClone if available, otherwise JSON fallback
+        if (typeof structuredClone !== 'undefined') {
+          structuredClone(obj);
+        } else {
+          // Fallback test using JSON serialization
+          JSON.stringify(obj);
+        }
         return obj;
       } catch {
-        return { __type: 'object', constructor: obj.constructor?.name || 'Unknown' };
+        // If not cloneable, return safe representation
+        return { 
+          __type: 'object', 
+          constructor: obj.constructor?.name || 'Unknown',
+          toString: obj.toString?.() || 'Object'
+        };
       }
     };
     
@@ -99,15 +186,62 @@ function deserializeMessage(data) {
   if (data.__type) {
     switch (data.__type) {
       case 'URL':
-        return new URL(data.href);
+        try {
+          return new URL(data.href);
+        } catch {
+          return { originalData: data, deserializationError: 'Invalid URL' };
+        }
       case 'Date':
         return new Date(data.value);
       case 'Error':
         const error = new Error(data.message);
         error.stack = data.stack;
+        error.name = data.name;
         return error;
       case 'function':
         return function() { console.warn(`Deserialized function ${data.name} called`); };
+      case 'File':
+        return { 
+          name: data.name, 
+          size: data.size, 
+          type: data.type,
+          lastModified: data.lastModified,
+          __isSerializedFile: true 
+        };
+      case 'Blob':
+        return { 
+          size: data.size, 
+          type: data.type,
+          __isSerializedBlob: true 
+        };
+      case 'ArrayBuffer':
+        return { 
+          byteLength: data.byteLength,
+          __isSerializedArrayBuffer: true 
+        };
+      case 'ImageData':
+        return { 
+          width: data.width, 
+          height: data.height,
+          __isSerializedImageData: true 
+        };
+      case 'HTMLElement':
+        return { 
+          tagName: data.tagName,
+          id: data.id,
+          className: data.className,
+          __isSerializedHTMLElement: true 
+        };
+      case 'Window':
+        return { 
+          origin: data.origin,
+          location: data.location,
+          __isSerializedWindow: true 
+        };
+      case 'CircularReference':
+        return { __isCircularReference: true };
+      case 'SerializationError':
+        return data;
       default:
         return data;
     }
@@ -122,7 +256,12 @@ function deserializeMessage(data) {
   if (data.constructor === Object) {
     const result = {};
     for (const [key, value] of Object.entries(data)) {
-      result[key] = deserializeMessage(value);
+      try {
+        result[key] = deserializeMessage(value);
+      } catch (error) {
+        console.warn(`Failed to deserialize property ${key}:`, error);
+        result[key] = { deserializationError: error.message, originalValue: value };
+      }
     }
     return result;
   }
@@ -154,7 +293,7 @@ function handleMessageError(error, operation, data) {
   return false;
 }
 
-// Enhanced message handler with deserialization
+// Enhanced message handler with comprehensive error handling
 function handleSDKMessage(event) {
   try {
     // Validate origin for security
@@ -162,48 +301,108 @@ function handleSDKMessage(event) {
       return;
     }
     
-    // Deserialize the message data
-    const deserializedData = deserializeMessage(event.data);
+    // Log incoming message for debugging
+    if (import.meta.env.DEV) {
+      console.debug('Incoming SDK message from:', event.origin);
+    }
+    
+    // Serialize the incoming data first to handle any non-cloneable objects
+    let messageData;
+    try {
+      messageData = serializeForPostMessage(event.data);
+    } catch (serializationError) {
+      console.warn('Failed to serialize incoming message:', serializationError);
+      messageData = { 
+        __type: 'SerializationError', 
+        error: serializationError.message,
+        origin: event.origin 
+      };
+    }
+    
+    // Then deserialize for processing
+    const deserializedData = deserializeMessage(messageData);
     
     // Process the message
     if (deserializedData && typeof deserializedData === 'object') {
-      console.log('Received SDK message:', deserializedData);
+      if (import.meta.env.DEV) {
+        console.log('Processed SDK message:', deserializedData);
+      }
       
       // Handle different message types
       if (deserializedData.type === 'sdk-ready') {
         window.apperSDK = { isInitialized: true, ...deserializedData.sdk };
       }
+      
+      // Handle error messages
+      if (deserializedData.type === 'error' || deserializedData.__type === 'SerializationError') {
+        console.warn('SDK error message received:', deserializedData);
+      }
     }
   } catch (error) {
     console.error('Error handling SDK message:', error);
+    
+    // Try to send error response back to SDK
+    try {
+      const errorResponse = {
+        type: 'error',
+        message: 'Failed to process message',
+        originalError: error.message,
+        timestamp: Date.now()
+      };
+      sendSafeMessage(event.source, errorResponse, event.origin);
+    } catch (responseError) {
+      console.error('Failed to send error response:', responseError);
+    }
   }
 }
 
-// Enhanced sendSafeMessage with proper serialization
+// Enhanced sendSafeMessage with comprehensive error handling
 function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
-  if (!targetWindow || !message) return;
+  if (!targetWindow || !message) {
+    console.warn('sendSafeMessage: Invalid parameters', { targetWindow, message });
+    return false;
+  }
+  
+  if (import.meta.env.DEV) {
+    console.debug('Sending message to:', targetOrigin, message);
+  }
   
   try {
     // First attempt - try sending directly
     targetWindow.postMessage(message, targetOrigin);
+    return true;
   } catch (error) {
-    // If DataCloneError, serialize and retry
+    // If DataCloneError or similar, serialize and retry
     if (handleMessageError(error, 'postMessage', message)) {
       try {
         const serializedMessage = serializeForPostMessage(message);
         targetWindow.postMessage(serializedMessage, targetOrigin);
+        
+        if (import.meta.env.DEV) {
+          console.debug('Message sent after serialization');
+        }
+        return true;
       } catch (serializedError) {
         console.error('Failed to send serialized message:', serializedError);
+        
         // Final fallback - send minimal error info
         try {
-          targetWindow.postMessage({
+          const fallbackMessage = {
+            type: 'error',
             error: 'Message serialization failed',
-            type: 'error'
-          }, targetOrigin);
+            originalError: error.message,
+            timestamp: Date.now()
+          };
+          targetWindow.postMessage(fallbackMessage, targetOrigin);
+          return true;
         } catch (finalError) {
           console.error('All message sending attempts failed:', finalError);
+          return false;
         }
       }
+    } else {
+      console.error('Unhandled message error:', error);
+      return false;
     }
   }
 }
@@ -223,13 +422,44 @@ static setupMessageHandler() {
     
     this.messageHandler = (event) => {
       try {
+        // Handle all incoming messages with proper error handling
         handleSDKMessage(event);
       } catch (error) {
         console.warn('Message handler error:', error);
+        
+        // Try to send error response if possible
+        if (event.source && event.origin) {
+          try {
+            const errorResponse = {
+              type: 'handler-error',
+              message: 'Message handler failed',
+              error: error.message,
+              timestamp: Date.now()
+            };
+            sendSafeMessage(event.source, errorResponse, event.origin);
+          } catch (responseError) {
+            console.error('Failed to send error response:', responseError);
+          }
+        }
       }
     };
     
     window.addEventListener('message', this.messageHandler);
+    
+    // Also intercept any postMessage calls to ensure they're safe
+    const originalPostMessage = window.postMessage;
+    window.postMessage = function(message, targetOrigin, transfer) {
+      try {
+        return originalPostMessage.call(this, message, targetOrigin, transfer);
+      } catch (error) {
+        console.warn('Intercepted postMessage error:', error);
+        if (error.name === 'DataCloneError') {
+          const serializedMessage = serializeForPostMessage(message);
+          return originalPostMessage.call(this, serializedMessage, targetOrigin, transfer);
+        }
+        throw error;
+      }
+    };
   }
   
   static cleanup() {
