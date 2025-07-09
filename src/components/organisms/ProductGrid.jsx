@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Grid } from "react-window";
-import Empty from "@/components/ui/Empty";
-import Error from "@/components/ui/Error";
-import Loading from "@/components/ui/Loading";
-import ProductCard from "@/components/molecules/ProductCard";
+import React, { useEffect, useMemo, useState } from 'react'
+import { FixedSizeGrid as Grid } from "react-window";
+import Empty from '@/components/ui/Empty'
+import Error from '@/components/ui/Error'
+import Loading from '@/components/ui/Loading'
+import ProductCard from '@/components/molecules/ProductCard'
 
 // Virtualized Product Grid for handling 10k+ products
 const VirtualizedProductGrid = ({ 
