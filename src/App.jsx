@@ -1,5 +1,5 @@
 import 'react-toastify/dist/ReactToastify.css';
-import React, { Suspense, useCallback, useEffect, useMemo, useState, lazy } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
@@ -22,7 +22,10 @@ import OrderTracking from "@/components/pages/OrderTracking";
 import Account from "@/components/pages/Account";
 import DeliveryTracking from "@/components/pages/DeliveryTracking";
 import POS from "@/components/pages/POS";
+import Checkout from "@/components/pages/Checkout";
 import FinancialDashboard from "@/components/pages/FinancialDashboard";
+import Home from "@/components/pages/Home";
+// Core components - direct import for immediate availability
 // Enhanced lazy loading with better error handling, retry logic, and module preloading
 function createLazyComponent(importFn, componentName) {
   const LazyComponent = lazy(() => 
@@ -277,12 +280,11 @@ checkStatus();
                 Refresh page
               </button>
             </div>
-</div>
-          )}
+)}
         </div>
       </div>
     );
-
+  };
   // Lightweight error handling - don't block the app for SDK errors
   useEffect(() => {
     const handleError = (event) => {
@@ -305,15 +307,14 @@ checkStatus();
   // Component preloader for performance
   useEffect(() => {
     // Preload likely-to-be-visited components after initial render
-    const preloadTimer = setTimeout(() => {
+const preloadTimer = setTimeout(() => {
       import("@/components/pages/Category").catch(() => {});
-import("@/components/pages/Category").catch(() => {});
-        import("@/components/pages/Orders").catch(() => {});
-        import("@/components/pages/Account").catch(() => {});
-      }, 2000);
-      
-      return () => clearTimeout(preloadTimer);
-
+      import("@/components/pages/Orders").catch(() => {});
+      import("@/components/pages/Account").catch(() => {});
+    }, 2000);
+    
+    return () => clearTimeout(preloadTimer);
+  }, []);
   return (
     <Provider store={store}>
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
