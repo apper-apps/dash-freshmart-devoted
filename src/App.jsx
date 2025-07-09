@@ -7,22 +7,9 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
-import PayrollManagement from "@/components/pages/PayrollManagement";
-import AdminDashboard from "@/components/pages/AdminDashboard";
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
-import AIGenerate from "@/components/pages/AIGenerate";
-import ProductManagement from "@/components/pages/ProductManagement";
-import Analytics from "@/components/pages/Analytics";
-import Orders from "@/components/pages/Orders";
-import PaymentManagement from "@/components/pages/PaymentManagement";
-import Category from "@/components/pages/Category";
-import OrderTracking from "@/components/pages/OrderTracking";
-import Account from "@/components/pages/Account";
-import DeliveryTracking from "@/components/pages/DeliveryTracking";
-import POS from "@/components/pages/POS";
 import Checkout from "@/components/pages/Checkout";
-import FinancialDashboard from "@/components/pages/FinancialDashboard";
 import Home from "@/components/pages/Home";
 
 // Enhanced lazy loading with error handling
@@ -174,9 +161,8 @@ function App() {
     };
 
     // Check immediately and then periodically
-    checkStatus();
+checkStatus();
     const interval = setInterval(checkStatus, 1000);
-const interval = setInterval(checkStatus, 1000);
     
     // Clean timeout - don't wait forever
     const timeout = setTimeout(() => {
@@ -221,9 +207,9 @@ const interval = setInterval(checkStatus, 1000);
               </button>
             </div>
           )}
-        </div>
+</div>
       </div>
-);
+    );
   };
 
   // Lightweight error handling - don't block the app for SDK errors
@@ -252,9 +238,9 @@ const interval = setInterval(checkStatus, 1000);
       import("@/components/pages/Category").catch(() => {});
       import("@/components/pages/Orders").catch(() => {});
       import("@/components/pages/Account").catch(() => {});
-    }, 2000);
+}, 2000);
 
-return () => clearTimeout(preloadTimer);
+    return () => clearTimeout(preloadTimer);
   }, []);
 
   return (
@@ -315,9 +301,9 @@ return () => clearTimeout(preloadTimer);
                       <ProductManagement />
                     </Suspense>
                   </LazyComponentErrorBoundary>
-                } />
+} />
                 <Route path="analytics" element={
-<LazyComponentErrorBoundary componentName="Analytics">
+                  <LazyComponentErrorBoundary componentName="Analytics">
                     <Suspense fallback={<EnhancedLoading message="Loading Analytics..." componentName="Analytics" />}>
                       <Analytics />
                     </Suspense>
