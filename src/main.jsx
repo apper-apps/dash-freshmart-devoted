@@ -51,8 +51,7 @@ function serializeForPostMessage(data) {
       }
       
       // Handle Error objects
-// Handle Error objects
-      if (obj instanceof Error) {
+if (obj instanceof Error) {
         return { 
           __type: 'Error', 
           message: obj.message,
@@ -60,7 +59,6 @@ function serializeForPostMessage(data) {
           stack: obj.stack
         };
       }
-}
       
       // Handle File objects
       if (typeof File !== 'undefined' && obj instanceof File) {
@@ -71,6 +69,7 @@ function serializeForPostMessage(data) {
           type: obj.type,
           lastModified: obj.lastModified
         };
+}
       
       // Handle Blob objects
       if (obj instanceof Blob) {
@@ -105,8 +104,9 @@ function serializeForPostMessage(data) {
           id: obj.id,
           className: obj.className
         };
-      }
-// Handle Window objects
+}
+      
+      // Handle Window objects
       if (typeof window !== 'undefined' && obj === window) {
         return { 
           __type: 'Window',
@@ -141,7 +141,6 @@ function serializeForPostMessage(data) {
         }
         return result;
       }
-      
 // Handle other objects (try cloning first)
       try {
         // Test if object is cloneable - use structuredClone if available, otherwise JSON fallback
@@ -292,74 +291,16 @@ function handleMessageError(error, operation, data) {
   
   return false;
 }
-
-// Enhanced message handler with comprehensive error handling
-function handleSDKMessage(event) {
-  try {
-    // Validate origin for security
-    if (!event.origin || event.origin === window.location.origin) {
-      return;
-    }
-    
-    // Log incoming message for debugging
-    if (import.meta.env.DEV) {
-      console.debug('Incoming SDK message from:', event.origin);
-    }
-    
-    // Serialize the incoming data first to handle any non-cloneable objects
-    let messageData;
-    try {
-      messageData = serializeForPostMessage(event.data);
-    } catch (serializationError) {
-      console.warn('Failed to serialize incoming message:', serializationError);
-      messageData = { 
-        __type: 'SerializationError', 
-        error: serializationError.message,
-        origin: event.origin 
-      };
-    }
-    
-    // Then deserialize for processing
-    const deserializedData = deserializeMessage(messageData);
-    
-    // Process the message
-    if (deserializedData && typeof deserializedData === 'object') {
-      if (import.meta.env.DEV) {
-        console.log('Processed SDK message:', deserializedData);
-      }
-      
-      // Handle different message types
-      if (deserializedData.type === 'sdk-ready') {
-        window.apperSDK = { isInitialized: true, ...deserializedData.sdk };
-      }
-      
-      // Handle error messages
-      if (deserializedData.type === 'error' || deserializedData.__type === 'SerializationError') {
-        console.warn('SDK error message received:', deserializedData);
-      }
-    }
-  } catch (error) {
-    console.error('Error handling SDK message:', error);
-    
-    // Try to send error response back to SDK
-    try {
-      const errorResponse = {
-        type: 'error',
-        message: 'Failed to process message',
-        originalError: error.message,
-        timestamp: Date.now()
-      };
-      sendSafeMessage(event.source, errorResponse, event.origin);
-    } catch (responseError) {
-      console.error('Failed to send error response:', responseError);
-    }
-  }
-}
-
 // Enhanced sendSafeMessage with comprehensive error handling
 function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
   if (!targetWindow || !message) {
     console.warn('sendSafeMessage: Invalid parameters', { targetWindow, message });
+    return false;
+  }
+  
+  // Check if target window is still valid
+  if (targetWindow.closed) {
+    console.warn('sendSafeMessage: Target window is closed');
     return false;
   }
   
@@ -372,6 +313,8 @@ function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
     targetWindow.postMessage(message, targetOrigin);
     return true;
   } catch (error) {
+    console.warn('Direct postMessage failed:', error.name, error.message);
+    
     // If DataCloneError or similar, serialize and retry
     if (handleMessageError(error, 'postMessage', message)) {
       try {
@@ -391,7 +334,10 @@ function sendSafeMessage(targetWindow, message, targetOrigin = "*") {
             type: 'error',
             error: 'Message serialization failed',
             originalError: error.message,
-            timestamp: Date.now()
+            serializedError: serializedError.message,
+            timestamp: Date.now(),
+            messageType: typeof message,
+            hasURL: message && typeof message === 'object' && Object.values(message).some(v => v instanceof URL)
           };
           targetWindow.postMessage(fallbackMessage, targetOrigin);
           return true;
@@ -447,16 +393,35 @@ class BackgroundSDKLoader {
     window.addEventListener('message', this.messageHandler);
     
     // Also intercept any postMessage calls to ensure they're safe
-    const originalPostMessage = window.postMessage;
+const originalPostMessage = window.postMessage;
     window.postMessage = function(message, targetOrigin, transfer) {
       try {
         return originalPostMessage.call(this, message, targetOrigin, transfer);
       } catch (error) {
-        console.warn('Intercepted postMessage error:', error);
+        console.warn('Intercepted postMessage error:', error.name, error.message);
+        
         if (error.name === 'DataCloneError') {
-          const serializedMessage = serializeForPostMessage(message);
-          return originalPostMessage.call(this, serializedMessage, targetOrigin, transfer);
+          try {
+            const serializedMessage = serializeForPostMessage(message);
+            if (import.meta.env.DEV) {
+              console.debug('Retrying with serialized message');
+            }
+            return originalPostMessage.call(this, serializedMessage, targetOrigin, transfer);
+          } catch (serializationError) {
+            console.error('Serialization fallback failed:', serializationError);
+            
+            // Ultra-minimal fallback
+            const minimalMessage = {
+              type: 'serialization_error',
+              error: error.message,
+              timestamp: Date.now()
+            };
+            return originalPostMessage.call(this, minimalMessage, targetOrigin, transfer);
+          }
         }
+        
+        // For other errors, log and re-throw
+        console.error('Unhandled postMessage error:', error);
         throw error;
       }
     };
