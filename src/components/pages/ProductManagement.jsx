@@ -6105,12 +6105,11 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
                   size="sm"
                   icon="ChevronRight"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+disabled={currentPage === totalPages}
                 >
                   Next
                 </Button>
               </div>
-</div>
             </div>
           </div>
         )}
