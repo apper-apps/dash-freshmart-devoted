@@ -327,6 +327,7 @@ const [formData, setFormData] = useState({
         toast.error("Price cannot exceed Rs. 100,000");
         return;
       }
+}
 
       // Discount validation with guards
       if (discountValue > 0) {
@@ -354,6 +355,16 @@ const [formData, setFormData] = useState({
           return;
         }
       }
+
+      // Validation Rules 3 and 4
+      if (price > 50000) {
+        toast.error("Price cannot exceed Rs. 50,000");
+        return;
+      }
+
+      if (purchasePrice > 0 && price > purchasePrice * 10) {
+        toast.error("Price cannot be more than 10 times the purchase price");
+        return;
 
       // Prepare product data with proper validation
       const productData = {
@@ -5789,7 +5800,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
       return;
     }
 
-    // Validation Rules 1 and 2
+// Validation Rules 1 and 2
     if (updates.newBasePrice && updates.newBasePrice <= 0) {
       toast.error("Base price must be greater than 0");
       return;
@@ -5802,6 +5813,17 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
 
     if (updates.newBasePrice && updates.newCostPrice && updates.newBasePrice <= updates.newCostPrice) {
       toast.error("Base price must be greater than cost price");
+      return;
+    }
+
+    // Validation Rules 3 and 4
+    if (updates.newBasePrice && updates.newBasePrice > 50000) {
+      toast.error("Base price cannot exceed Rs. 50,000");
+      return;
+    }
+
+    if (updates.newBasePrice && updates.newCostPrice && updates.newBasePrice > updates.newCostPrice * 10) {
+      toast.error("Base price cannot be more than 10 times the cost price");
       return;
     }
 

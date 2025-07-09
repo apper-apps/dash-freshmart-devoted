@@ -594,18 +594,31 @@ class ProductService {
     }
   }
 
-  // Validate price update
+// Validate price update
   validatePriceUpdate(priceData) {
+    // Rule 1: Price must be greater than 0
     if (priceData.price && priceData.price <= 0) {
       return { isValid: false, error: 'Price must be greater than 0' };
     }
     
+    // Rule 2: Purchase price cannot be negative
     if (priceData.purchasePrice && priceData.purchasePrice < 0) {
       return { isValid: false, error: 'Purchase price cannot be negative' };
     }
     
+    // Rule 2: Selling price must be greater than purchase price
     if (priceData.price && priceData.purchasePrice && priceData.price <= priceData.purchasePrice) {
       return { isValid: false, error: 'Selling price must be greater than purchase price' };
+    }
+    
+    // Rule 3: Price cannot exceed Rs. 50,000
+    if (priceData.price && priceData.price > 50000) {
+      return { isValid: false, error: 'Price cannot exceed Rs. 50,000' };
+    }
+    
+    // Rule 4: Price cannot be more than 10 times the purchase price
+    if (priceData.price && priceData.purchasePrice && priceData.price > priceData.purchasePrice * 10) {
+      return { isValid: false, error: 'Price cannot be more than 10 times the purchase price' };
     }
     
     return { isValid: true };
