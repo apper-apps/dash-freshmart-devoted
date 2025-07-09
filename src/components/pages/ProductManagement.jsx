@@ -11,7 +11,6 @@ import Cart from "@/components/pages/Cart";
 import Category from "@/components/pages/Category";
 import Checkout from "@/components/pages/Checkout";
 import productService from "@/services/api/productService";
-
 // Enhanced Switch Component with better accessibility
 function Switch({ checked, onChange, color = 'primary', disabled = false, ...props }) {
   const baseClasses = "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
@@ -3113,12 +3112,13 @@ const ProductBulkUpdateTable = ({
   previewHighlights,
   onRowSelection,
   onSelectAll,
-  onDeselectAll
 }) => {
   const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
   const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
+  
   const handleSelectAllChange = (e) => {
     if (e.target.checked) {
+      onSelectAll(products);
       onSelectAll(products);
     } else {
       onDeselectAll();
@@ -3293,7 +3293,6 @@ const ProductBulkUpdateTable = ({
 </div>
   );
 };
-
 const ImageUploadSystem = ({
   imageData, 
   setImageData, 

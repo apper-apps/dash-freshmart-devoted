@@ -7,30 +7,135 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
+import PayrollManagement from "@/components/pages/PayrollManagement";
+import AdminDashboard from "@/components/pages/AdminDashboard";
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
+import AIGenerate from "@/components/pages/AIGenerate";
+import ProductManagement from "@/components/pages/ProductManagement";
+import Analytics from "@/components/pages/Analytics";
+import Orders from "@/components/pages/Orders";
+import PaymentManagement from "@/components/pages/PaymentManagement";
+import Category from "@/components/pages/Category";
+import OrderTracking from "@/components/pages/OrderTracking";
+import Account from "@/components/pages/Account";
+import DeliveryTracking from "@/components/pages/DeliveryTracking";
+import POS from "@/components/pages/POS";
 import Checkout from "@/components/pages/Checkout";
+import FinancialDashboard from "@/components/pages/FinancialDashboard";
 import Home from "@/components/pages/Home";
 
-// Lazy load heavy components for better performance
-const AdminDashboard = React.lazy(() => import('@/components/pages/AdminDashboard'));
-const ProductManagement = React.lazy(() => import('@/components/pages/ProductManagement'));
-const Analytics = React.lazy(() => import('@/components/pages/Analytics'));
-const FinancialDashboard = React.lazy(() => import('@/components/pages/FinancialDashboard'));
-const POS = React.lazy(() => import('@/components/pages/POS'));
-const PaymentManagement = React.lazy(() => import('@/components/pages/PaymentManagement'));
-const PayrollManagement = React.lazy(() => import('@/components/pages/PayrollManagement'));
-const DeliveryTracking = React.lazy(() => import('@/components/pages/DeliveryTracking'));
-const AIGenerate = React.lazy(() => import('@/components/pages/AIGenerate'));
-const Category = React.lazy(() => import('@/components/pages/Category'));
-const Orders = React.lazy(() => import('@/components/pages/Orders'));
-const OrderTracking = React.lazy(() => import('@/components/pages/OrderTracking'));
-const Account = React.lazy(() => import('@/components/pages/Account'));
+// Enhanced lazy loading with error handling
+const createLazyComponent = (importFn, componentName) => {
+  return React.lazy(async () => {
+    try {
+      const module = await importFn();
+      return module;
+    } catch (error) {
+      console.error(`Failed to load ${componentName}:`, error);
+      // Return a fallback component instead of throwing
+      return {
+        default: () => (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md mx-auto">
+              <div className="text-red-500 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load {componentName}</h2>
+              <p className="text-gray-600 mb-4">There was an error loading this page component.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        )
+      };
+    }
+  });
+};
+
+// Lazy load heavy components with error handling
+const AdminDashboard = createLazyComponent(() => import('@/components/pages/AdminDashboard'), 'Admin Dashboard');
+const ProductManagement = createLazyComponent(() => import('@/components/pages/ProductManagement'), 'Product Management');
+const Analytics = createLazyComponent(() => import('@/components/pages/Analytics'), 'Analytics');
+const FinancialDashboard = createLazyComponent(() => import('@/components/pages/FinancialDashboard'), 'Financial Dashboard');
+const POS = createLazyComponent(() => import('@/components/pages/POS'), 'POS');
+const PaymentManagement = createLazyComponent(() => import('@/components/pages/PaymentManagement'), 'Payment Management');
+const PayrollManagement = createLazyComponent(() => import('@/components/pages/PayrollManagement'), 'Payroll Management');
+const DeliveryTracking = createLazyComponent(() => import('@/components/pages/DeliveryTracking'), 'Delivery Tracking');
+const AIGenerate = createLazyComponent(() => import('@/components/pages/AIGenerate'), 'AI Generate');
+const Category = createLazyComponent(() => import('@/components/pages/Category'), 'Category');
+const Orders = createLazyComponent(() => import('@/components/pages/Orders'), 'Orders');
+const OrderTracking = createLazyComponent(() => import('@/components/pages/OrderTracking'), 'Order Tracking');
+const Account = createLazyComponent(() => import('@/components/pages/Account'), 'Account');
+
+// Enhanced error boundary component with retry mechanism
+const LazyComponentErrorBoundary = ({ children, fallback, componentName }) => {
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+  const handleRetry = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      setHasError(false);
+    }
+  };
+
+  useEffect(() => {
+    const errorHandler = (error) => {
+      console.error(`Error in ${componentName}:`, error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', errorHandler);
+    return () => window.removeEventListener('error', errorHandler);
+  }, [componentName]);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md mx-auto">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error in {componentName}</h2>
+          <p className="text-gray-600 mb-4">Something went wrong loading this component.</p>
+          <div className="space-y-2">
+            {retryCount < maxRetries && (
+              <button 
+                onClick={handleRetry}
+                className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Retry ({maxRetries - retryCount} attempts left)
+              </button>
+            )}
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors ml-2"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+};
+
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
 
-  // Optimized SDK status checking - memoized for performance
   const checkSDKStatus = useCallback(() => {
     try {
       const status = {
@@ -71,22 +176,57 @@ function App() {
     // Check immediately and then periodically
     checkStatus();
     const interval = setInterval(checkStatus, 1000);
+const interval = setInterval(checkStatus, 1000);
     
     // Clean timeout - don't wait forever
     const timeout = setTimeout(() => {
-      if (mounted) {
-        clearInterval(interval);
-      }
-    }, 6000);
+      clearInterval(interval);
+      setSdkReady(true); // Continue without SDK
+    }, 5000);
     
     return () => {
-      mounted = false;
       clearInterval(interval);
       clearTimeout(timeout);
+      mounted = false;
     };
   }, [checkSDKStatus]);
 
-// Lightweight error handling - don't block the app for SDK errors
+  // Enhanced loading component with status messages and timeout handling
+  const EnhancedLoading = ({ message = "Loading...", componentName = "" }) => {
+    const [loadingTime, setLoadingTime] = useState(0);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setLoadingTime(prev => prev + 1);
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }, []);
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loading />
+          <p className="mt-4 text-gray-600 font-medium">{message}</p>
+          {componentName && (
+            <p className="mt-2 text-sm text-gray-500">Loading {componentName}...</p>
+          )}
+          {loadingTime > 5 && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">Taking longer than expected...</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-2 text-sm text-yellow-600 hover:text-yellow-800 underline"
+              >
+                Refresh page
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+);
+  };
+
+  // Lightweight error handling - don't block the app for SDK errors
   useEffect(() => {
     const handleError = (event) => {
       if (event.reason?.message?.includes('Apper') || event.error?.message?.includes('Apper')) {
@@ -114,9 +254,10 @@ function App() {
       import("@/components/pages/Account").catch(() => {});
     }, 2000);
 
-    return () => clearTimeout(preloadTimer);
+return () => clearTimeout(preloadTimer);
   }, []);
-return (
+
+  return (
     <Provider store={store}>
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
         <BrowserRouter>
@@ -131,97 +272,113 @@ return (
             )}
             
             <Routes>
-                <Route path="/" element={<Layout />}>
-                  {/* Core routes - no lazy loading */}
-                  <Route index element={<Home />} />
-                  <Route path="product/:productId" element={<ProductDetail />} />
-                  <Route path="cart" element={<Cart />} />
-                  <Route path="checkout" element={<Checkout />} />
-                  
-                  {/* Lazy loaded routes */}
-                  <Route path="category/:categoryName" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <Category />
-                    </Suspense>
-                  } />
-                  <Route path="orders" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <Orders />
-                    </Suspense>
-                  } />
-                  <Route path="orders/:orderId" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <OrderTracking />
-                    </Suspense>
-                  } />
-                  <Route path="account" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <Account />
-                    </Suspense>
-                  } />
-                  
-                  {/* Heavy admin routes - lazy loaded */}
-                  <Route path="admin" element={
-                    <Suspense fallback={<Loading type="page" />}>
+              <Route path="/" element={<Layout />}>
+                {/* Core routes - no lazy loading */}
+                <Route index element={<Home />} />
+                <Route path="product/:productId" element={<ProductDetail />} />
+                <Route path="cart" element={<Cart />} />
+                <Route path="checkout" element={<Checkout />} />
+                
+                {/* Lazy loaded routes */}
+                <Route path="category/:categoryName" element={
+                  <Suspense fallback={<Loading type="page" />}>
+                    <Category />
+                  </Suspense>
+                } />
+                <Route path="orders" element={
+                  <Suspense fallback={<Loading type="page" />}>
+                    <Orders />
+                  </Suspense>
+                } />
+                <Route path="orders/:orderId" element={
+                  <Suspense fallback={<Loading type="page" />}>
+                    <OrderTracking />
+                  </Suspense>
+                } />
+                <Route path="account" element={
+                  <Suspense fallback={<Loading type="page" />}>
+                    <Account />
+                  </Suspense>
+                } />
+                
+                {/* Heavy admin routes - lazy loaded */}
+                <Route path="admin" element={
+                  <LazyComponentErrorBoundary componentName="Admin Dashboard">
+                    <Suspense fallback={<EnhancedLoading message="Loading Admin Dashboard..." componentName="Admin Dashboard" />}>
                       <AdminDashboard />
                     </Suspense>
-                  } />
-                  <Route path="admin/products" element={
-                    <Suspense fallback={<Loading type="page" />}>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="admin/products" element={
+                  <LazyComponentErrorBoundary componentName="Product Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Product Management..." componentName="Product Management" />}>
                       <ProductManagement />
                     </Suspense>
-                  } />
-                  <Route path="admin/pos" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <POS />
-                    </Suspense>
-                  } />
-                  <Route path="admin/delivery-dashboard" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <DeliveryTracking />
-                    </Suspense>
-                  } />
-                  <Route path="admin/analytics" element={
-                    <Suspense fallback={<Loading type="page" />}>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="analytics" element={
+<LazyComponentErrorBoundary componentName="Analytics">
+                    <Suspense fallback={<EnhancedLoading message="Loading Analytics..." componentName="Analytics" />}>
                       <Analytics />
                     </Suspense>
-                  } />
-                  <Route path="admin/financial-dashboard" element={
-                    <Suspense fallback={<Loading type="page" />}>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="financial" element={
+                  <LazyComponentErrorBoundary componentName="Financial Dashboard">
+                    <Suspense fallback={<EnhancedLoading message="Loading Financial Dashboard..." componentName="Financial Dashboard" />}>
                       <FinancialDashboard />
                     </Suspense>
-                  } />
-                  <Route path="admin/payments" element={
-<Suspense fallback={<Loading type="page" />}>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="pos" element={
+                  <LazyComponentErrorBoundary componentName="POS System">
+                    <Suspense fallback={<EnhancedLoading message="Loading POS System..." componentName="POS System" />}>
+                      <POS />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="payments" element={
+                  <LazyComponentErrorBoundary componentName="Payment Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Payment Management..." componentName="Payment Management" />}>
                       <PaymentManagement />
                     </Suspense>
-                  } />
-                  <Route path="admin/ai-generate" element={
-                    <Suspense fallback={<Loading type="page" />}>
-                      <AIGenerate />
-                    </Suspense>
-                  } />
-                  <Route path="admin/payroll" element={
-                    <Suspense fallback={<Loading type="page" />}>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="payroll" element={
+                  <LazyComponentErrorBoundary componentName="Payroll Management">
+                    <Suspense fallback={<EnhancedLoading message="Loading Payroll Management..." componentName="Payroll Management" />}>
                       <PayrollManagement />
                     </Suspense>
-                  } />
-                </Route>
-              </Routes>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="delivery" element={
+                  <LazyComponentErrorBoundary componentName="Delivery Tracking">
+                    <Suspense fallback={<EnhancedLoading message="Loading Delivery Tracking..." componentName="Delivery Tracking" />}>
+                      <DeliveryTracking />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+                <Route path="ai-generate" element={
+                  <LazyComponentErrorBoundary componentName="AI Generate">
+                    <Suspense fallback={<EnhancedLoading message="Loading AI Generate..." componentName="AI Generate" />}>
+                      <AIGenerate />
+                    </Suspense>
+                  </LazyComponentErrorBoundary>
+                } />
+              </Route>
+            </Routes>
             
             <ToastContainer
               position="top-right"
               autoClose={3000}
               hideProgressBar={false}
-              newestOnTop
+              newestOnTop={false}
               closeOnClick
               rtl={false}
-              pauseOnFocusLoss={false}
+              pauseOnFocusLoss
               draggable
-              pauseOnHover={false}
-              theme="colored"
-              style={{ zIndex: 9999 }}
-              limit={3}
+              pauseOnHover
+              theme="light"
             />
           </div>
         </BrowserRouter>
