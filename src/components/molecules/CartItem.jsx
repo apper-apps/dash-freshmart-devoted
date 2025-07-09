@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Plus, Minus, Trash2 } from 'lucide-react';
-import { updateQuantity, removeFromCart } from '@/store/cartSlice.jsx';
+import { updateQuantity, removeFromCart, updateQuantityWithValidation } from '@/store/cartSlice.js';
 import { toast } from 'react-toastify';
-import { addNotification } from "@/store/notificationSlice.jsx";
-import { updateQuantityWithValidation } from "@/store/cartSlice";
+import { addNotification } from "@/store/notificationSlice.js";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 
