@@ -735,8 +735,125 @@ else if (margin > 10) health = 'fair';
       recommendation: margin < 10 ? 'Consider increasing price or reducing cost' : 'Healthy profit margin'
     };
   }
-}
+// Concurrent edit protection methods
+  async lockRow(productId, operation) {
+    await this.delay(50);
+    
+    try {
+      const lockKey = `lock_${productId}`;
+      const existingLock = this.rowLocks?.get(lockKey);
+      
+      if (!this.rowLocks) {
+        this.rowLocks = new Map();
+      }
+      
+      if (existingLock && (Date.now() - existingLock.timestamp) < 30000) {
+        throw new Error(`Row is locked by another user for ${operation}`);
+      }
+      
+      this.rowLocks.set(lockKey, {
+        productId,
+        operation,
+        timestamp: Date.now(),
+        userId: 'current_user'
+      });
+      
+      return { success: true, lockId: lockKey };
+    } catch (error) {
+      console.error('Error locking row:', error);
+      throw error;
+    }
+  }
 
+  async unlockRow(productId) {
+    await this.delay(30);
+    
+    try {
+      const lockKey = `lock_${productId}`;
+      if (this.rowLocks) {
+        this.rowLocks.delete(lockKey);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error unlocking row:', error);
+      throw error;
+    }
+  }
+
+  async detectConflicts(productId, operation) {
+    await this.delay(100);
+    
+    try {
+      const lockKey = `lock_${productId}`;
+      const existingLock = this.rowLocks?.get(lockKey);
+      
+      if (existingLock && (Date.now() - existingLock.timestamp) < 30000) {
+        return {
+          hasConflict: true,
+          conflictType: 'concurrent_edit',
+          lockedBy: existingLock.userId,
+          operation: existingLock.operation,
+          timestamp: existingLock.timestamp
+        };
+      }
+      
+      return { hasConflict: false };
+    } catch (error) {
+      console.error('Error detecting conflicts:', error);
+      return { hasConflict: false };
+    }
+  }
+
+  // Virtual scrolling optimization methods
+  async getVirtualizedData(startIndex, endIndex, filters = {}) {
+    await this.delay(50);
+    
+    try {
+      let filteredProducts = await this.searchAndFilter(filters.search, filters);
+      
+      const virtualizedSlice = filteredProducts.slice(startIndex, endIndex);
+      
+      return {
+        items: virtualizedSlice,
+        totalCount: filteredProducts.length,
+        startIndex,
+        endIndex,
+        hasMore: endIndex < filteredProducts.length
+      };
+    } catch (error) {
+      console.error('Error getting virtualized data:', error);
+      throw error;
+    }
+  }
+
+  async getPerformanceMetrics() {
+    await this.delay(20);
+    
+    try {
+      const totalProducts = this.products.length;
+      const memoryUsage = performance.memory ? {
+        used: performance.memory.usedJSHeapSize,
+        total: performance.memory.totalJSHeapSize,
+        limit: performance.memory.jsHeapSizeLimit
+      } : null;
+      
+      return {
+        totalProducts,
+        memoryUsage,
+        timestamp: Date.now(),
+        virtualizationRecommended: totalProducts > 1000
+      };
+    } catch (error) {
+      console.error('Error getting performance metrics:', error);
+      return {
+        totalProducts: 0,
+        memoryUsage: null,
+        timestamp: Date.now(),
+        virtualizationRecommended: false
+      };
+    }
+  }
+}
 // Create and export service instance
 const productServiceInstance = new ProductService();
 
@@ -772,7 +889,13 @@ export default {
   getDynamicImageDimensions: productServiceInstance.getDynamicImageDimensions.bind(productServiceInstance),
   validateBulkPriceUpdate: productServiceInstance.validateBulkPriceUpdate.bind(productServiceInstance),
   validatePriceUpdate: productServiceInstance.validatePriceUpdate.bind(productServiceInstance),
-  roundToDecimals: productServiceInstance.roundToDecimals.bind(productServiceInstance),
-  calculateMarginPercentage: productServiceInstance.calculateMarginPercentage.bind(productServiceInstance)
+roundToDecimals: productServiceInstance.roundToDecimals.bind(productServiceInstance),
+  calculateMarginPercentage: productServiceInstance.calculateMarginPercentage.bind(productServiceInstance),
+  // Concurrent edit protection methods
+  lockRow: productServiceInstance.lockRow.bind(productServiceInstance),
+  unlockRow: productServiceInstance.unlockRow.bind(productServiceInstance),
+  detectConflicts: productServiceInstance.detectConflicts.bind(productServiceInstance),
+  // Virtual scrolling optimization methods
+  getVirtualizedData: productServiceInstance.getVirtualizedData.bind(productServiceInstance),
+  getPerformanceMetrics: productServiceInstance.getPerformanceMetrics.bind(productServiceInstance)
 };
-export const productService = productServiceInstance;

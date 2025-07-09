@@ -51,7 +51,12 @@ const ProductManagement = () => {
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [showBulkPriceManager, setShowBulkPriceManager] = useState(false);
   const [pendingVisibilityToggles, setPendingVisibilityToggles] = useState(new Set());
-  // Preview Mode State
+  
+  // Concurrent Edit Protection State
+  const [editingLocks, setEditingLocks] = useState(new Map()); // productId -> { userId, timestamp, operation }
+  const [conflictDetection, setConflictDetection] = useState(new Map()); // productId -> conflict info
+  const [concurrentEditWarnings, setConcurrentEditWarnings] = useState(new Set());
+  
   // Preview Mode State
   const [previewMode, setPreviewMode] = useState(false);
   const [previewDevice, setPreviewDevice] = useState('desktop'); // desktop, mobile
@@ -474,13 +479,36 @@ setFormData({
 }
   };
 
-  // Handle product visibility toggle
+// Handle product visibility toggle with concurrent edit protection
   const handleVisibilityToggle = async (productId, currentVisibility) => {
     if (pendingVisibilityToggles.has(productId)) {
       return; // Prevent double-clicks
     }
 
+    // Check for concurrent edit conflicts
+    const conflict = await productService.detectConflicts(productId, 'visibility');
+    if (conflict.hasConflict) {
+      toast.warning(`Another user is currently editing this product. Please wait and try again.`);
+      setConcurrentEditWarnings(prev => new Set(prev).add(productId));
+      setTimeout(() => {
+        setConcurrentEditWarnings(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+      }, 3000);
+      return;
+    }
+
     try {
+      // Lock the row for editing
+      await productService.lockRow(productId, 'visibility');
+      setEditingLocks(prev => new Map(prev).set(productId, {
+        operation: 'visibility',
+        timestamp: Date.now(),
+        userId: 'current_user' // In real app, get from auth context
+      }));
+
       // Add to pending set for UI feedback
       setPendingVisibilityToggles(prev => new Set(prev).add(productId));
       
@@ -506,24 +534,37 @@ setFormData({
     } catch (error) {
       console.error("Error updating product visibility:", error);
       
-      // Revert optimistic update on error
-      setProducts(prevProducts => 
-        prevProducts.map(product => 
-          product.id === productId 
-            ? { ...product, isVisible: currentVisibility }
-            : product
-        )
-      );
-      
-      toast.error("Failed to update product visibility. Please try again.");
+      // Handle concurrent edit conflicts
+      if (error.message.includes('concurrent')) {
+        toast.error("Another user modified this product. Please refresh and try again.");
+        await loadProducts(); // Refresh data
+      } else {
+        // Revert optimistic update on error
+        setProducts(prevProducts => 
+          prevProducts.map(product => 
+            product.id === productId 
+              ? { ...product, isVisible: currentVisibility }
+              : product
+          )
+        );
+        toast.error("Failed to update product visibility. Please try again.");
+      }
     } finally {
+      // Unlock the row
+      await productService.unlockRow(productId);
+      setEditingLocks(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(productId);
+        return newMap;
+      });
+
       // Remove from pending set
       setPendingVisibilityToggles(prev => {
         const newSet = new Set(prev);
         newSet.delete(productId);
         return newSet;
       });
-}
+    }
     
     // Update preview products when visibility changes
     if (previewMode) {
@@ -2731,178 +2772,238 @@ const BulkUpdateSidebar = ({
                 <h3 className="font-medium text-gray-900">Update Strategy</h3>
               </div>
               
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="strategy"
-                    value="percentage"
-                    checked={updateData.strategy === 'percentage'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Percentage Change</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="strategy"
-                    value="fixed"
-                    checked={updateData.strategy === 'fixed'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Fixed Amount</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="strategy"
-                    value="range"
-                    checked={updateData.strategy === 'range'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Price Range</label>
-                </div>
-              </div>
+// Bulk Price Manager Modal with concurrent edit protection
+const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [editingPrices, setEditingPrices] = useState({});
+  const [pendingUpdates, setPendingUpdates] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  
+  // Concurrent edit protection state
+  const [rowLocks, setRowLocks] = useState(new Map()); // productId -> lock info
+  const [conflictAlerts, setConflictAlerts] = useState(new Map()); // productId -> conflict details
+  
+  const ITEMS_PER_PAGE = 100;
+  const categories = ["Groceries", "Meat", "Fruits", "Vegetables", "Dairy", "Bakery", "Beverages"];
 
-              {/* Strategy Value Input */}
-              {updateData.strategy === 'percentage' && (
-                <Input
-                  label="Percentage Change (%)"
-                  name="value"
-                  type="number"
-                  step="0.1"
-                  value={updateData.value}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 10 for 10% increase"
-                  icon="Percent"
-                />
-              )}
-              
-              {updateData.strategy === 'fixed' && (
-                <Input
-                  label="Fixed Amount (Rs.)"
-                  name="value"
-                  type="number"
-                  step="0.01"
-                  value={updateData.value}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 50 to add Rs. 50"
-                  icon="DollarSign"
-                />
-              )}
+  // Filter and paginate products
+  const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    
+    const matchesSearch = !searchTerm || 
+      (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.barcode && product.barcode.includes(searchTerm));
+    
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
-              {updateData.strategy === 'range' && (
-                <div className="space-y-3">
-                  <Input
-                    label="Minimum Price (Rs.)"
-                    name="minPrice"
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    value={updateData.minPrice}
-                    onChange={handleInputChange}
-                    icon="TrendingDown"
-                  />
-                  <Input
-                    label="Maximum Price (Rs.)"
-                    name="maxPrice"
-                    type="number"
-                    step="0.01"
-                    max="100000"
-                    value={updateData.maxPrice}
-                    onChange={handleInputChange}
-                    icon="TrendingUp"
-                  />
-                </div>
-              )}
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Auto-calculate margin: newMargin = ((newBase - newCost) / newCost) * 100
+  const calculateMargin = (basePrice, costPrice) => {
+    const base = parseFloat(basePrice) || 0;
+    const cost = parseFloat(costPrice) || 0;
+    
+    if (cost <= 0) return 0;
+    
+    const margin = ((base - cost) / cost) * 100;
+    return Math.round(margin * 100) / 100; // Round to 2 decimals
+  };
+
+  // Update editing prices with auto-calculation and conflict detection
+  const updateEditingPrice = async (productId, field, value) => {
+    // Check for concurrent edits before allowing changes
+    const conflict = await productService.detectConflicts(productId, 'price');
+    if (conflict.hasConflict) {
+      setConflictAlerts(prev => new Map(prev).set(productId, {
+        message: 'Another user is editing this product',
+        timestamp: Date.now()
+      }));
+      toast.warning('Another user is currently editing this product. Please wait.');
+      return;
+    }
+
+    const numValue = parseFloat(value) || 0;
+    const roundedValue = Math.round(numValue * 100) / 100; // Auto-round to 2 decimals
+    
+    setEditingPrices(prev => {
+      const current = prev[productId] || {};
+      const updated = { ...current, [field]: roundedValue };
+      
+      // Auto-calculate margin when base or cost changes
+      if (field === 'newBasePrice' || field === 'newCostPrice') {
+        const basePrice = field === 'newBasePrice' ? roundedValue : (current.newBasePrice || 0);
+        const costPrice = field === 'newCostPrice' ? roundedValue : (current.newCostPrice || 0);
+        updated.newMargin = calculateMargin(basePrice, costPrice);
+      }
+      
+      return { ...prev, [productId]: updated };
+    });
+  };
+
+  // Apply individual product price update with row locking
+  const handleApplyUpdate = async (product) => {
+    const productId = product.id;
+    const updates = editingPrices[productId];
+    
+    if (!updates || (!updates.newBasePrice && !updates.newCostPrice)) {
+      toast.warning("No price changes to apply");
+      return;
+    }
+
+    // Validation Rules 1 and 2
+    if (updates.newBasePrice && updates.newBasePrice <= 0) {
+      toast.error("Base price must be greater than 0");
+      return;
+    }
+    
+    if (updates.newCostPrice && updates.newCostPrice < 0) {
+      toast.error("Cost price cannot be negative");
+      return;
+    }
+
+    if (updates.newBasePrice && updates.newCostPrice && updates.newBasePrice <= updates.newCostPrice) {
+      toast.error("Base price must be greater than cost price");
+      return;
+    }
+
+    // Validation Rules 3 and 4
+    if (updates.newBasePrice && updates.newBasePrice > 50000) {
+      toast.error("Base price cannot exceed Rs. 50,000");
+      return;
+    }
+
+    if (updates.newBasePrice && updates.newCostPrice && updates.newBasePrice > updates.newCostPrice * 10) {
+      toast.error("Base price cannot be more than 10 times the cost price");
+      return;
+    }
+
+    try {
+      // Lock the row before updating
+      await productService.lockRow(productId, 'price');
+      setRowLocks(prev => new Map(prev).set(productId, {
+        operation: 'price',
+        timestamp: Date.now(),
+        userId: 'current_user'
+      }));
+
+      setPendingUpdates(prev => new Set(prev).add(productId));
+      
+      // PATCH /products/:id/prices
+      const updateData = {};
+      if (updates.newBasePrice) updateData.price = updates.newBasePrice;
+      if (updates.newCostPrice) updateData.purchasePrice = updates.newCostPrice;
+      
+      await productService.update(productId, updateData);
+      
+      // Update local state
+      setEditingPrices(prev => {
+        const updated = { ...prev };
+        updated[productId] = {
+          ...updated[productId],
+          status: 'updated',
+          timestamp: new Date().toLocaleString()
+        };
+        return updated;
+      });
+      
+      toast.success(`Price updated for ${product.name}`);
+      onUpdate(); // Refresh parent data
+      
+    } catch (error) {
+      console.error('Error updating product prices:', error);
+      
+      // Handle concurrent edit conflicts
+      if (error.message.includes('concurrent') || error.message.includes('lock')) {
+        toast.error('Another user modified this product. Please refresh and try again.');
+        setConflictAlerts(prev => new Map(prev).set(productId, {
+          message: 'Concurrent edit detected',
+          timestamp: Date.now()
+        }));
+      } else {
+        toast.error(`Failed to update prices: ${error.message}`);
+      }
+    } finally {
+      // Unlock the row
+      await productService.unlockRow(productId);
+      setRowLocks(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(productId);
+        return newMap;
+      });
+
+      setPendingUpdates(prev => {
+        const updated = new Set(prev);
+        updated.delete(productId);
+        return updated;
+      });
+    }
+  };
+
+  // Revert changes for individual product
+  const handleRevertUpdate = (productId) => {
+    setEditingPrices(prev => {
+      const updated = { ...prev };
+      delete updated[productId];
+      return updated;
+    });
+    
+    // Clear any conflict alerts
+    setConflictAlerts(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(productId);
+      return newMap;
+    });
+    
+    toast.info("Changes reverted");
+  };
+
+  // Get product status including concurrent edit info
+  const getProductStatus = (productId) => {
+    const editing = editingPrices[productId];
+    const hasLock = rowLocks.has(productId);
+    const hasConflict = conflictAlerts.has(productId);
+    
+    if (hasConflict) {
+      return { status: 'conflict', timestamp: null };
+    }
+    
+    if (hasLock) {
+      return { status: 'locked', timestamp: null };
+    }
+    
+    if (!editing) return { status: 'none', timestamp: null };
+    
+    if (editing.status === 'updated') {
+      return { status: 'updated', timestamp: editing.timestamp };
+    }
+    
+    if (editing.newBasePrice || editing.newCostPrice) {
+      return { status: 'pending', timestamp: null };
+    }
+    
+    return { status: 'none', timestamp: null };
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-[95vw] w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Bulk Price Manager</h2>
+              <p className="text-gray-600 mt-1">Advanced concurrent editing with row locking</p>
             </div>
-
-            {/* Apply To Section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <ApperIcon name="Target" size={16} className="text-primary" />
-                <h3 className="font-medium text-gray-900">Apply To</h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="applyTo"
-                    value="base_price"
-                    checked={updateData.applyTo === 'base_price'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Base Price</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="applyTo"
-                    value="cost_price"
-                    checked={updateData.applyTo === 'cost_price'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Cost Price</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="applyTo"
-                    value="selected_rows"
-                    checked={updateData.applyTo === 'selected_rows'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Selected Rows ({updateData.selectedRows.size})</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="applyTo"
-                    value="filtered_products"
-                    checked={updateData.applyTo === 'filtered_products'}
-                    onChange={handleInputChange}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Filtered Products ({filteredProducts.length})</label>
-                </div>
-              </div>
-            </div>
-
-            {/* Price Guards Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ApperIcon name="Shield" size={16} className="text-primary" />
-                  <h3 className="font-medium text-gray-900">Price Guards</h3>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={updateData.priceGuards.enabled}
-                    onChange={(e) => handleNestedInputChange('priceGuards.enabled', e.target.checked)}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm text-gray-700">Enabled</label>
-                </div>
-              </div>
-
-              {updateData.priceGuards.enabled && (
-                <div className="space-y-3">
-                  <Input
-                    label="Min Price (Rs.)"
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    value={updateData.priceGuards.minPrice}
-                    onChange={(e) => handleNestedInputChange('priceGuards.minPrice', parseFloat(e.target.value) || 1)}
-                    icon="TrendingDown"
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
                   />
                   <Input
                     label="Max Price (Rs.)"
@@ -5047,26 +5148,35 @@ const CustomerProductGrid = ({
         }`}>
           {previewProducts.map((product) => (
             <div
-              key={product.id}
-              className="bg-white rounded-xl shadow-card hover:shadow-premium transition-all duration-300 overflow-hidden group cursor-pointer"
-              onClick={() => {
-                setSelectedPreviewProduct(product);
-                setPreviewView('detail');
-              }}
-            >
-              <div className="relative">
-                <img
-                  src={product.imageUrl || "/api/placeholder/300/200"}
-                  alt={product.name}
-                  className={`w-full ${previewDevice === 'mobile' ? 'h-48' : 'h-56'} object-cover group-hover:scale-105 transition-transform duration-300`}
-                  onError={(e) => {
-                    e.target.src = "/api/placeholder/300/200";
-                  }}
-                />
-                
-                {/* Product Badges */}
-                {product.discountValue && (
-                  <div className="absolute top-2 left-2">
+{/* Status: Pending/Updated/Conflict + Timestamp */}
+                        <td className="px-4 py-4">
+                          <div className="space-y-1">
+                            <Badge 
+                              variant={
+                                status.status === 'updated' ? 'success' :
+                                status.status === 'pending' ? 'warning' :
+                                status.status === 'conflict' ? 'error' :
+                                status.status === 'locked' ? 'info' : 'secondary'
+                              }
+                              className="text-xs"
+                            >
+                              {status.status === 'updated' ? 'Updated' :
+                               status.status === 'pending' ? 'Pending' :
+                               status.status === 'conflict' ? 'Conflict' :
+                               status.status === 'locked' ? 'Locked' : 'No Changes'}
+                            </Badge>
+                            {status.timestamp && (
+                              <div className="text-xs text-gray-500">
+                                {status.timestamp}
+                              </div>
+                            )}
+                            {conflictAlerts.has(product.id) && (
+                              <div className="text-xs text-red-600 font-medium">
+                                {conflictAlerts.get(product.id).message}
+                              </div>
+                            )}
+                          </div>
+                        </td>
                     <Badge variant="sale" className="text-xs font-bold">
                       {product.discountType === 'Percentage' ? 
                         `${product.discountValue}% OFF` : 
