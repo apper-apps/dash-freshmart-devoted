@@ -340,26 +340,12 @@ checkStatus();
   }, []);
   
   // SDK utilities
-// Performance monitoring
+// Consolidated useEffect to prevent hook order issues
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (performance.memory) {
-        const memoryUsage = performance.memory.usedJSHeapSize / 1024 / 1024;
-        if (memoryUsage > 100) {
-          console.warn('High memory usage detected:', memoryUsage.toFixed(2), 'MB');
-        }
-      }
-    }, 30000);
+    // SDK Status monitoring with retry logic
+    const statusInterval = setInterval(checkSDKStatus, 5000);
     
-    return () => clearInterval(interval);
-  }, []);
-  
-  if (!mounted) {
-    return <EnhancedLoading message="Initializing application..." />;
-  }
-  
-  // Lightweight error handling - don't block the app for SDK errors
-  useEffect(() => {
+    // Error handler for SDK-related errors
     const handleError = (event) => {
       if (event.reason?.message?.includes('Apper') || event.error?.message?.includes('Apper')) {
         console.warn('SDK error detected but not blocking app:', event);
@@ -368,27 +354,32 @@ checkStatus();
     };
     
     window.addEventListener('unhandledrejection', handleError);
-    return () => window.removeEventListener('unhandledrejection', handleError);
-  }, []);
-
-  // Memoized SDK utilities for performance
-const sdkUtils = useMemo(() => ({
-    ready: sdkReady,
-    error: sdkError,
-    checkStatus: checkSDKStatus
-  }), [sdkReady, sdkError, checkSDKStatus]);
-
-  // Component preloader for performance
-  useEffect(() => {
-    // Preload likely-to-be-visited components after initial render
+    
+    // Component preloader for performance
     const preloadTimer = setTimeout(() => {
       import("@/components/pages/Category").catch(() => {});
       import("@/components/pages/Orders").catch(() => {});
       import("@/components/pages/Account").catch(() => {});
     }, 2000);
     
-    return () => clearTimeout(preloadTimer);
-  }, []);
+    return () => {
+      clearInterval(statusInterval);
+      window.removeEventListener('unhandledrejection', handleError);
+      clearTimeout(preloadTimer);
+    };
+  }, [checkSDKStatus]);
+  
+  // Memoized SDK utilities for performance
+  const sdkUtils = useMemo(() => ({
+    ready: sdkReady,
+    error: sdkError,
+    checkStatus: checkSDKStatus
+  }), [sdkReady, sdkError, checkSDKStatus]);
+  
+  if (!mounted) {
+    return <EnhancedLoading message="Initializing application..." />;
+  }
+  
   return (
     <Provider store={store}>
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
@@ -403,7 +394,7 @@ const sdkUtils = useMemo(() => ({
               </div>
             )}
             
-<Routes>
+            <Routes>
               <Route path="/" element={<Layout />}>
                 {/* Core routes - no lazy loading */}
                 <Route index element={<Home />} />
@@ -417,7 +408,7 @@ const sdkUtils = useMemo(() => ({
                     <LazyCategory />
                   </Suspense>
                 } />
-<Route path="orders" element={
+                <Route path="orders" element={
                   <Suspense fallback={<Loading type="page" />}>
                     <LazyOrders />
                   </Suspense>
@@ -434,7 +425,7 @@ const sdkUtils = useMemo(() => ({
                 } />
                 
                 {/* Heavy admin routes - lazy loaded */}
-<Route path="admin" element={
+                <Route path="admin" element={
                   <LazyComponentErrorBoundary componentName="Admin Dashboard">
                     <Suspense fallback={<EnhancedLoading message="Loading Admin Dashboard..." componentName="Admin Dashboard" />}>
                       <LazyAdminDashboard />
@@ -469,7 +460,7 @@ const sdkUtils = useMemo(() => ({
                     </Suspense>
                   </LazyComponentErrorBoundary>
                 } />
-<Route path="payments" element={
+                <Route path="payments" element={
                   <LazyComponentErrorBoundary componentName="Payment Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Payment Management..." componentName="Payment Management" />}>
                       <LazyPaymentManagement />

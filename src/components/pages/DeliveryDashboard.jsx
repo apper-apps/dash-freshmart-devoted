@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import { orderService } from '@/services/api/orderService';
-import { deliveryPersonnelService } from '@/services/api/deliveryPersonnelService';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Orders from "@/components/pages/Orders";
+import { orderService } from "@/services/api/orderService";
+import { deliveryPersonnelService } from "@/services/api/deliveryPersonnelService";
 
-const DeliveryDashboard = () => {
-  const [orders, setOrders] = useState([]);
+function DeliveryDashboard() {
+const [orders, setOrders] = useState([]);
   const [personnel, setPersonnel] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,85 +17,56 @@ const DeliveryDashboard = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 31.5204, lng: 74.3587 });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  // Memoized data loader to prevent unnecessary re-renders
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       const [ordersData, personnelData] = await Promise.all([
-        orderService.getAll(),
+        orderService.getDeliveryOrders(),
         deliveryPersonnelService.getAll()
       ]);
-
-      setOrders(ordersData.filter(order => order.deliveryStatus !== 'delivered'));
+      
+      setOrders(ordersData);
       setPersonnel(personnelData);
     } catch (err) {
-      setError(err.message);
-      toast.error('Failed to load delivery data');
+      console.error('Error loading delivery data:', err);
+      setError('Failed to load delivery data. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleAssignDelivery = async (orderId, personnelId) => {
+  // Consolidated useEffect to prevent hook order issues
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+// Memoized handlers to prevent unnecessary re-renders
+  const handleAssignDelivery = useCallback(async (orderId, personnelId) => {
     try {
-      await orderService.assignDeliveryPersonnel(orderId, personnelId);
-      await deliveryPersonnelService.updateStatus(personnelId, 'on_delivery');
-      
-      toast.success('Delivery personnel assigned successfully');
-      setAssignModalOpen(false);
-      setSelectedOrder(null);
-      loadData();
+      await orderService.assignDelivery(orderId, personnelId);
+      toast.success('Delivery assigned successfully');
+      loadData(); // Refresh data
     } catch (err) {
-      toast.error('Failed to assign delivery personnel');
+      console.error('Error assigning delivery:', err);
+      toast.error('Failed to assign delivery');
     }
-  };
+  }, [loadData]);
 
-const handleStatusUpdate = async (orderId, status) => {
+  const handleStatusUpdate = useCallback(async (orderId, status) => {
     try {
-      const actualDelivery = status === 'delivered' ? new Date().toISOString() : null;
-      await orderService.updateDeliveryStatus(orderId, status, actualDelivery);
-      
-      // Update order status to align with delivery status
-      let orderStatus = null;
-      switch (status) {
-        case 'picked_up':
-          orderStatus = 'packed';
-          break;
-        case 'out_for_delivery':
-          orderStatus = 'shipped';
-          break;
-        case 'delivered':
-          orderStatus = 'delivered';
-          break;
-        default:
-          // For assigned and pending_assignment, maintain current order status
-          break;
-      }
-      
-      if (orderStatus) {
-        await orderService.updateOrderStatus(orderId, orderStatus);
-      }
-      
-      if (status === 'delivered') {
-        const order = orders.find(o => o.id === orderId);
-        if (order?.deliveryPersonId) {
-          await deliveryPersonnelService.updateStatus(order.deliveryPersonId, 'available');
-        }
-      }
-      
-      toast.success('Delivery status updated successfully');
-      loadData();
+      await orderService.updateDeliveryStatus(orderId, status);
+      toast.success('Status updated successfully');
+      loadData(); // Refresh data
     } catch (err) {
-      toast.error('Failed to update delivery status');
+      console.error('Error updating status:', err);
+      toast.error('Failed to update status');
     }
-  };
+  }, [loadData]);
 
-  const getStatusColor = (status) => {
+// Memoized status color functions
+  const getStatusColor = useMemo(() => (status) => {
     const colors = {
       'pending_assignment': 'bg-yellow-100 text-yellow-800',
       'assigned': 'bg-blue-100 text-blue-800',
@@ -103,26 +75,21 @@ const handleStatusUpdate = async (orderId, status) => {
       'delivered': 'bg-green-100 text-green-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  }, []);
 
-  const getPersonnelStatusColor = (status) => {
+  const getPersonnelStatusColor = useMemo(() => (status) => {
     const colors = {
       'available': 'bg-green-100 text-green-800',
       'on_delivery': 'bg-blue-100 text-blue-800',
       'off_duty': 'bg-gray-100 text-gray-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  }, []);
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Loading type="dashboard" />
-      </div>
-    );
+    return <Loading message="Loading delivery dashboard..." />;
   }
-
-  if (error) {
+if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Error message={error} onRetry={loadData} />
