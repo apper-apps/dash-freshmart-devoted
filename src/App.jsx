@@ -1,51 +1,121 @@
 import 'react-toastify/dist/ReactToastify.css';
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
+import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
+import PayrollManagement from "@/components/pages/PayrollManagement";
+import AdminDashboard from "@/components/pages/AdminDashboard";
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
-import Checkout from "@/components/pages/Checkout";
-import Home from "@/components/pages/Home";
-
-// Enhanced lazy loading with error handling
-const createLazyComponent = (importFn, componentName) => {
-  return React.lazy(async () => {
-    try {
-      const module = await importFn();
-      return module;
-    } catch (error) {
+import AIGenerate from "@/components/pages/AIGenerate";
+import ProductManagement from "@/components/pages/ProductManagement";
+import Analytics from "@/components/pages/Analytics";
+import Orders from "@/components/pages/Orders";
+import PaymentManagement from "@/components/pages/PaymentManagement";
+import Category from "@/components/pages/Category";
+import OrderTracking from "@/components/pages/OrderTracking";
+import Account from "@/components/pages/Account";
+import DeliveryTracking from "@/components/pages/DeliveryTracking";
+import POS from "@/components/pages/POS";
+import FinancialDashboard from "@/components/pages/FinancialDashboard";
+// Enhanced lazy loading with better error handling, retry logic, and module preloading
+function createLazyComponent(importFn, componentName) {
+  const LazyComponent = lazy(() => 
+    Promise.race([
+      importFn(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error(`Timeout loading ${componentName}`)), 10000)
+      )
+    ]).catch(error => {
       console.error(`Failed to load ${componentName}:`, error);
-      // Return a fallback component instead of throwing
-      return {
+      
+      // Try to preload the module again
+      if (error.message.includes('Failed to fetch')) {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            importFn()
+              .then(resolve)
+              .catch(() => {
+                // Return fallback component as last resort
+                resolve({ 
+                  default: () => (
+                    <div className="p-8 text-center">
+                      <h2 className="text-xl font-semibold text-red-600 mb-4">
+                        Failed to load {componentName}
+                      </h2>
+                      <p className="text-gray-600 mb-4">
+                        There was an error loading this page. Please try refreshing.
+                      </p>
+                      <button 
+                        onClick={() => window.location.reload()}
+                        className="btn-primary"
+                      >
+                        Refresh Page
+                      </button>
+                    </div>
+                  )
+                });
+              });
+          }, 1000);
+        });
+      }
+      
+      // Return fallback component for other errors
+      return { 
         default: () => (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md mx-auto">
-              <div className="text-red-500 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load {componentName}</h2>
-              <p className="text-gray-600 mb-4">There was an error loading this page component.</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Reload Page
-              </button>
-            </div>
+          <div className="p-8 text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">
+              Error loading {componentName}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {error.message || 'An unexpected error occurred'}
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn-primary"
+            >
+              Refresh Page
+            </button>
           </div>
         )
       };
-    }
-  });
-};
+    })
+  );
 
+  return function WrappedLazyComponent(props) {
+    return (
+      <LazyComponentErrorBoundary 
+        fallback={<Error message={`Error loading ${componentName}`} />}
+        componentName={componentName}
+      >
+        <Suspense fallback={<EnhancedLoading message={`Loading ${componentName}...`} componentName={componentName} />}>
+          <LazyComponent {...props} />
+        </Suspense>
+      </LazyComponentErrorBoundary>
+    );
+  };
+}
+
+function LazyComponentErrorBoundary({ children, fallback, componentName }) {
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+const handleRetry = useCallback(() => {
+      if (retryCount < maxRetries) {
+        setHasError(false);
+        setRetryCount(prev => prev + 1);
+        // Force reload the component
+      }
+    }, [retryCount, maxRetries]);
+  
+    return children;
+  };
 // Lazy load heavy components with error handling
 const AdminDashboard = createLazyComponent(() => import('@/components/pages/AdminDashboard'), 'Admin Dashboard');
 const ProductManagement = createLazyComponent(() => import('@/components/pages/ProductManagement'), 'Product Management');
@@ -60,7 +130,8 @@ const Category = createLazyComponent(() => import('@/components/pages/Category')
 const Orders = createLazyComponent(() => import('@/components/pages/Orders'), 'Orders');
 const OrderTracking = createLazyComponent(() => import('@/components/pages/OrderTracking'), 'Order Tracking');
 const Account = createLazyComponent(() => import('@/components/pages/Account'), 'Account');
-
+const Home = createLazyComponent(() => import('@/components/pages/Home'), 'Home');
+const Checkout = createLazyComponent(() => import('@/components/pages/Checkout'), 'Checkout');
 // Enhanced error boundary component with retry mechanism
 const LazyComponentErrorBoundary = ({ children, fallback, componentName }) => {
   const [hasError, setHasError] = useState(false);
@@ -206,11 +277,11 @@ checkStatus();
                 Refresh page
               </button>
             </div>
-          )}
 </div>
+          )}
+        </div>
       </div>
     );
-  };
 
   // Lightweight error handling - don't block the app for SDK errors
   useEffect(() => {
@@ -236,12 +307,12 @@ checkStatus();
     // Preload likely-to-be-visited components after initial render
     const preloadTimer = setTimeout(() => {
       import("@/components/pages/Category").catch(() => {});
-      import("@/components/pages/Orders").catch(() => {});
-      import("@/components/pages/Account").catch(() => {});
-}, 2000);
-
-    return () => clearTimeout(preloadTimer);
-  }, []);
+import("@/components/pages/Category").catch(() => {});
+        import("@/components/pages/Orders").catch(() => {});
+        import("@/components/pages/Account").catch(() => {});
+      }, 2000);
+      
+      return () => clearTimeout(preloadTimer);
 
   return (
     <Provider store={store}>
@@ -299,9 +370,9 @@ checkStatus();
                   <LazyComponentErrorBoundary componentName="Product Management">
                     <Suspense fallback={<EnhancedLoading message="Loading Product Management..." componentName="Product Management" />}>
                       <ProductManagement />
-                    </Suspense>
+</Suspense>
                   </LazyComponentErrorBoundary>
-} />
+                } />
                 <Route path="analytics" element={
                   <LazyComponentErrorBoundary componentName="Analytics">
                     <Suspense fallback={<EnhancedLoading message="Loading Analytics..." componentName="Analytics" />}>
