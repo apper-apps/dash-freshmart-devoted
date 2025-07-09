@@ -181,12 +181,13 @@ const ProductGrid = ({
             </div>
             <div className="text-blue-600">
               Render time: {performanceMetrics.renderTime.toFixed(1)}ms
-            </div>
+Render time: {performanceMetrics.renderTime.toFixed(1)}ms
           </div>
         </div>
+      </div>
       )}
 
-{shouldUseVirtualization ? (
+      {shouldUseVirtualization ? (
         <VirtualizedProductGrid
           products={products}
           columnCount={columnCount}
@@ -196,7 +197,6 @@ const ProductGrid = ({
       ) : (
         <StandardProductGrid products={products} />
       )}
-
       {/* Performance metrics footer */}
       {typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && (
         <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
