@@ -167,10 +167,10 @@ const ProductGrid = ({
     );
   }
 
-  return (
+return (
     <div className="product-grid-container">
       {/* Performance indicator for large datasets */}
-{shouldUseVirtualization && (
+      {shouldUseVirtualization && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
@@ -194,9 +194,9 @@ const ProductGrid = ({
         />
       ) : (
         <StandardProductGrid products={products} />
-      )}
+)}
       {/* Performance metrics footer */}
-      {typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && (
+      {(typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') && (
         <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
           Products: {products.length} | Columns: {columnCount} | 
           Virtualized: {shouldUseVirtualization ? 'Yes' : 'No'} | 
@@ -205,5 +205,6 @@ const ProductGrid = ({
       )}
     </div>
   );
+};
 
 export default ProductGrid;
