@@ -170,7 +170,7 @@ const ProductGrid = ({
   return (
     <div className="product-grid-container">
       {/* Performance indicator for large datasets */}
-      {shouldUseVirtualization && (
+{shouldUseVirtualization && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
@@ -181,12 +181,10 @@ const ProductGrid = ({
             </div>
             <div className="text-blue-600">
               Render time: {performanceMetrics.renderTime.toFixed(1)}ms
-Render time: {performanceMetrics.renderTime.toFixed(1)}ms
+            </div>
           </div>
         </div>
-      </div>
       )}
-
       {shouldUseVirtualization ? (
         <VirtualizedProductGrid
           products={products}
