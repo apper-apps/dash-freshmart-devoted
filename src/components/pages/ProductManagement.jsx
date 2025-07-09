@@ -11,7 +11,6 @@ import Cart from "@/components/pages/Cart";
 import Category from "@/components/pages/Category";
 import Checkout from "@/components/pages/Checkout";
 import productService from "@/services/api/productService";
-// Enhanced Switch Component with better accessibility
 function Switch({ checked, onChange, color = 'primary', disabled = false, ...props }) {
   const baseClasses = "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
   const colorClasses = {
@@ -3030,7 +3029,7 @@ const BulkUpdateSidebar = ({
         </div>
 
 {/* Product Table */}
-        <div className="flex-1 overflow-auto">
+<div className="flex-1 overflow-auto">
           <ProductBulkUpdateTable
             products={filteredProducts}
             updateData={updateData}
@@ -3108,7 +3107,8 @@ const ProductBulkUpdateTable = ({
   showPreview,
   previewHighlights,
   onRowSelection,
-onDeselectAll
+  onSelectAll,
+  onDeselectAll
 }) => {
   const isAllSelected = products.length > 0 && products.every(p => updateData.selectedRows.has(p.id));
   const isIndeterminate = products.some(p => updateData.selectedRows.has(p.id)) && !isAllSelected;
@@ -6115,7 +6115,7 @@ const BulkPriceManagerModal = ({ products, onClose, onUpdate }) => {
         )}
       </div>
     </div>
-  );
+);
 };
 
 export default ProductManagement;
