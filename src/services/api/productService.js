@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 // ProductService class definition
@@ -268,7 +270,7 @@ class ProductService {
     return true;
   }
 
-  // Calculate new price based on strategy
+// Calculate new price based on strategy
   calculateNewPrice(product, updateData) {
     let newPrice = product.price;
     
@@ -296,7 +298,6 @@ class ProductService {
     
     return this.roundToDecimals(Math.max(1, newPrice));
   }
-
   // Search and filter products
   async searchAndFilter(searchTerm = "", filters = {}) {
     await this.delay();
@@ -715,9 +716,9 @@ class ProductService {
     let health = 'poor';
     if (margin > 30) health = 'excellent';
     else if (margin > 20) health = 'good';
-    else if (margin > 10) health = 'fair';
+else if (margin > 10) health = 'fair';
     
-return {
+    return {
       health,
       margin,
       recommendation: margin < 10 ? 'Consider increasing price or reducing cost' : 'Healthy profit margin'
@@ -762,4 +763,7 @@ export default {
   validatePriceUpdate: productServiceInstance.validatePriceUpdate.bind(productServiceInstance),
   roundToDecimals: productServiceInstance.roundToDecimals.bind(productServiceInstance),
   calculateMarginPercentage: productServiceInstance.calculateMarginPercentage.bind(productServiceInstance)
+};
+
+export const productService = productServiceInstance;
 };
