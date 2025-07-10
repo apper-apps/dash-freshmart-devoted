@@ -217,14 +217,14 @@ const quickActions = [
 
 return (
     <Sentry.ErrorBoundary fallback={<Error message="Admin Dashboard encountered an error" />}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage your FreshMart store</p>
-      </div>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl">
 <div className="flex items-center justify-between">
 <div>
@@ -502,6 +502,7 @@ return (
           </div>
 </div>
       </div>
+    </div>
     </Sentry.ErrorBoundary>
   );
 };
