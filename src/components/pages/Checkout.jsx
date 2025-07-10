@@ -63,7 +63,7 @@ function Checkout() {
       }
     });
     
-    const discountedSubtotal = subtotal - totalSavings;
+const discountedSubtotal = subtotal - totalSavings;
     const deliveryCharge = discountedSubtotal >= 2000 ? 0 : 150;
     
     return {
@@ -71,13 +71,13 @@ function Checkout() {
       dealSavings: totalSavings,
       subtotal: discountedSubtotal,
       deliveryCharge,
-      total: discountedSubtotal + deliveryCharge + calculateGatewayFee()
+      total: discountedSubtotal + deliveryCharge + calculateGatewayFee(discountedSubtotal)
     };
   };
 
   const totals = calculateCartTotals();
   const { originalSubtotal, dealSavings, subtotal, deliveryCharge, total } = totals;
-  const gatewayFee = calculateGatewayFee();
+  const gatewayFee = calculateGatewayFee(subtotal);
 
 // Load available payment methods from admin configuration
   React.useEffect(() => {
@@ -99,14 +99,14 @@ function Checkout() {
       console.error('Failed to load payment methods:', error)
       toast.error('Failed to load payment options')
     }
-  }
+}
 
-  function calculateGatewayFee() {
+  function calculateGatewayFee(subtotalValue = 0) {
     const selectedMethod = availablePaymentMethods.find(method => method.id === paymentMethod)
     if (!selectedMethod || !selectedMethod.fee) return 0
     
     const feeAmount = typeof selectedMethod.fee === 'number' 
-      ? selectedMethod.fee * subtotal 
+      ? selectedMethod.fee * subtotalValue 
       : selectedMethod.fee
     
     return Math.max(feeAmount, selectedMethod.minimumFee || 0)
@@ -308,9 +308,9 @@ async function completeOrder(paymentResult) {
         }
       });
       
-      const finalSubtotal = validatedSubtotal - validatedDealSavings;
+const finalSubtotal = validatedSubtotal - validatedDealSavings;
       const validatedDeliveryCharge = finalSubtotal >= 2000 ? 0 : 150;
-      const validatedTotal = finalSubtotal + validatedDeliveryCharge + gatewayFee;
+      const validatedTotal = finalSubtotal + validatedDeliveryCharge + calculateGatewayFee(finalSubtotal);
 
 const orderData = {
         items: validatedItems,
