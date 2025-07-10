@@ -23,6 +23,8 @@ const AdminDashboard = () => {
   const notificationCounts = useSelector(state => state.notifications.counts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState({
     walletBalance: 0,
     totalTransactions: 0,
@@ -132,12 +134,21 @@ const AdminDashboard = () => {
     }
   }, [dispatch]);
 
-  const handleTabClick = useCallback((path) => {
+const handleTabClick = useCallback(async (tabKey, path) => {
+    setTabLoading(true);
+    
+    // Handle notification clearing
     const notificationKey = notificationService.getNotificationKey(path);
     if (notificationKey && notificationCounts[notificationKey] > 0) {
       dispatch(resetCount({ key: notificationKey }));
       notificationService.markAsRead(notificationKey);
     }
+    
+    // Simulate content loading for smooth UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    setActiveTab(tabKey);
+    setTabLoading(false);
   }, [dispatch, notificationCounts]);
 
   // Setup polling for notification counts
@@ -204,15 +215,16 @@ const handleWalletAction = async (action, amount = 0) => {
   };
 
 const quickActions = [
-    { label: 'Manage Products', path: '/admin/products', icon: 'Package', color: 'from-blue-500 to-cyan-500', notificationKey: 'products' },
-    { label: 'POS Terminal', path: '/admin/pos', icon: 'Calculator', color: 'from-green-500 to-emerald-500', notificationKey: 'pos' },
-    { label: 'View Orders', path: '/orders', icon: 'ShoppingCart', color: 'from-purple-500 to-pink-500', notificationKey: 'orders' },
-    { label: 'Financial Dashboard', path: '/admin/financial-dashboard', icon: 'DollarSign', color: 'from-emerald-500 to-teal-500', notificationKey: 'financial' },
-    { label: 'AI Generate', path: '/admin/ai-generate', icon: 'Brain', color: 'from-purple-500 to-indigo-500', notificationKey: 'ai' },
-    { label: 'Payment Verification', path: '/admin/payments?tab=verification', icon: 'Shield', color: 'from-orange-500 to-red-500', notificationKey: 'verification' },
-    { label: 'Payment Management', path: '/admin/payments', icon: 'CreditCard', color: 'from-teal-500 to-cyan-500', notificationKey: 'payments' },
-    { label: 'Delivery Tracking', path: '/admin/delivery-dashboard', icon: 'MapPin', color: 'from-indigo-500 to-purple-500', notificationKey: 'delivery' },
-    { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-amber-500 to-orange-500', notificationKey: 'analytics' }
+    { label: 'Dashboard', tabKey: 'dashboard', path: '/admin', icon: 'Home', color: 'from-slate-500 to-gray-500', notificationKey: 'dashboard' },
+    { label: 'Manage Products', tabKey: 'products', path: '/admin/products', icon: 'Package', color: 'from-blue-500 to-cyan-500', notificationKey: 'products' },
+    { label: 'POS Terminal', tabKey: 'pos', path: '/admin/pos', icon: 'Calculator', color: 'from-green-500 to-emerald-500', notificationKey: 'pos' },
+    { label: 'View Orders', tabKey: 'orders', path: '/orders', icon: 'ShoppingCart', color: 'from-purple-500 to-pink-500', notificationKey: 'orders' },
+    { label: 'Financial Dashboard', tabKey: 'financial', path: '/admin/financial-dashboard', icon: 'DollarSign', color: 'from-emerald-500 to-teal-500', notificationKey: 'financial' },
+    { label: 'AI Generate', tabKey: 'ai', path: '/admin/ai-generate', icon: 'Brain', color: 'from-purple-500 to-indigo-500', notificationKey: 'ai' },
+    { label: 'Payment Verification', tabKey: 'verification', path: '/admin/payments?tab=verification', icon: 'Shield', color: 'from-orange-500 to-red-500', notificationKey: 'verification' },
+    { label: 'Payment Management', tabKey: 'payments', path: '/admin/payments', icon: 'CreditCard', color: 'from-teal-500 to-cyan-500', notificationKey: 'payments' },
+    { label: 'Delivery Tracking', tabKey: 'delivery', path: '/admin/delivery-dashboard', icon: 'MapPin', color: 'from-indigo-500 to-purple-500', notificationKey: 'delivery' },
+    { label: 'Analytics', tabKey: 'analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-amber-500 to-orange-500', notificationKey: 'analytics' }
   ];
 
 return (
@@ -222,6 +234,63 @@ return (
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage your FreshMart store</p>
         </div>
+
+        {/* Quick Actions Navigation */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {quickActions.map((action) => {
+              const badgeCount = notificationCounts[action.notificationKey] || 0;
+              const isActive = activeTab === action.tabKey;
+              
+              return (
+                <div
+                  key={action.tabKey}
+                  onClick={() => handleTabClick(action.tabKey, action.path)}
+                  className={`group cursor-pointer transition-all duration-200 ${
+                    isActive ? 'scale-105' : 'hover:scale-102'
+                  }`}
+                >
+                  <div className={`relative p-4 rounded-lg border transition-all duration-200 ${
+                    isActive 
+                      ? 'border-primary bg-primary/5 shadow-md' 
+                      : 'border-gray-200 hover:border-primary hover:shadow-md'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <div className={`relative bg-gradient-to-r ${action.color} p-2 rounded-lg ${
+                        isActive ? 'shadow-lg' : ''
+                      }`}>
+                        <ApperIcon name={action.icon} size={20} className="text-white" />
+                        {badgeCount > 0 && (
+                          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] shadow-lg">
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`font-medium transition-colors ${
+                        isActive 
+                          ? 'text-primary' 
+                          : 'text-gray-900 group-hover:text-primary'
+                      }`}>
+                        {action.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {tabLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loading type="component" />
+          </div>
+        ) : (
+          <div className="tab-content">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-8">
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -286,49 +355,17 @@ return (
         </div>
       </div>
 
-      {/* Quick Actions and Recent Orders */}
+{/* Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-{/* Quick Actions */}
-        <div className="card p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quickActions.map((action) => {
-              const badgeCount = notificationCounts[action.notificationKey] || 0;
-              return (
-                <Link
-                  key={action.path}
-                  to={action.path}
-                  className="group"
-                  onClick={() => handleTabClick(action.path)}
-                >
-                  <div className="relative p-4 rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center space-x-3">
-                      <div className={`relative bg-gradient-to-r ${action.color} p-2 rounded-lg`}>
-                        <ApperIcon name={action.icon} size={20} className="text-white" />
-                        {badgeCount > 0 && (
-                          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] shadow-lg">
-                            {badgeCount > 99 ? '99+' : badgeCount}
-                          </div>
-                        )}
-                      </div>
-                      <span className="font-medium text-gray-900 group-hover:text-primary transition-colors">
-                        {action.label}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Recent Orders */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Recent Orders</h2>
-            <Link to="/orders" className="text-primary hover:text-primary-dark transition-colors">
+            <button
+              onClick={() => handleTabClick('orders', '/orders')}
+              className="text-primary hover:text-primary-dark transition-colors"
+            >
               View All
-            </Link>
+            </button>
           </div>
           
           {recentOrders.length === 0 ? (
@@ -348,10 +385,41 @@ return (
                       <p className="font-medium text-gray-900">Order #{order?.id || 'Unknown'}</p>
                       <p className="text-sm text-gray-600">{format(new Date(order?.createdAt || new Date()), 'MMM dd, yyyy')}</p>
                     </div>
-</div>
+                  </div>
                   <div className="text-right">
                     <p className="font-bold text-green-600">Rs. {(order?.total || 0).toLocaleString()}</p>
                     <p className="text-sm text-gray-600">{order?.status || 'Unknown'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+{/* Low Stock Alert */}
+        <div className="card p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Low Stock Alert</h2>
+          {lowStockProducts.length === 0 ? (
+            <div className="text-center py-8">
+              <ApperIcon name="CheckCircle" size={48} className="text-green-400 mx-auto mb-4" />
+              <p className="text-gray-600">All products are well stocked</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {lowStockProducts.slice(0, 5).map((product) => (
+                <div key={product.Id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-orange-500 p-2 rounded-lg">
+                      <ApperIcon name="AlertTriangle" size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{product?.name || 'Unknown Product'}</p>
+                      <p className="text-sm text-gray-600">SKU: {product?.sku || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-orange-600">{product?.stock || 0} left</p>
+                    <p className="text-sm text-gray-600">Low stock</p>
                   </div>
                 </div>
               ))}
@@ -502,6 +570,164 @@ return (
           </div>
 </div>
       </div>
+              </div>
+            )}
+
+            {/* Tab Contents */}
+            {activeTab === 'products' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Product Management</h2>
+                  <Link to="/admin/products" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="Package" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Product management interface</p>
+                  <p className="text-sm text-gray-500">Manage your product catalog, inventory, and pricing</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'pos' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">POS Terminal</h2>
+                  <Link to="/admin/pos" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="Calculator" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Point of Sale system</p>
+                  <p className="text-sm text-gray-500">Process transactions and manage sales</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'orders' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Order Management</h2>
+                  <Link to="/orders" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="ShoppingCart" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Order management system</p>
+                  <p className="text-sm text-gray-500">View and manage customer orders</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'financial' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Financial Dashboard</h2>
+                  <Link to="/admin/financial-dashboard" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="DollarSign" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Financial overview and reporting</p>
+                  <p className="text-sm text-gray-500">Track revenue, expenses, and financial metrics</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'ai' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">AI Generate</h2>
+                  <Link to="/admin/ai-generate" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="Brain" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">AI-powered content generation</p>
+                  <p className="text-sm text-gray-500">Generate product descriptions and marketing content</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'verification' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Payment Verification</h2>
+                  <Link to="/admin/payments?tab=verification" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="Shield" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Payment verification system</p>
+                  <p className="text-sm text-gray-500">Verify and approve payment transactions</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'payments' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Payment Management</h2>
+                  <Link to="/admin/payments" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="CreditCard" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Payment processing and management</p>
+                  <p className="text-sm text-gray-500">Handle payments, refunds, and transactions</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'delivery' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Delivery Tracking</h2>
+                  <Link to="/admin/delivery-dashboard" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="MapPin" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Delivery management and tracking</p>
+                  <p className="text-sm text-gray-500">Track deliveries and manage delivery personnel</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900">Analytics Dashboard</h2>
+                  <Link to="/admin/analytics" className="btn-primary">
+                    <ApperIcon name="ExternalLink" size={16} className="mr-2" />
+                    Open Full View
+                  </Link>
+                </div>
+                <div className="text-center py-12">
+                  <ApperIcon name="TrendingUp" size={64} className="text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Business analytics and insights</p>
+                  <p className="text-sm text-gray-500">View charts, reports, and business metrics</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
     </div>
     </Sentry.ErrorBoundary>
   );
