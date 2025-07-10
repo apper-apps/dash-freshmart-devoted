@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import * as Sentry from "@sentry/react";
 import Error from "@/components/ui/Error";
 
 class FastErrorBoundary extends Component {
@@ -29,8 +30,24 @@ class FastErrorBoundary extends Component {
       errorInfo,
       retryCount: this.state.retryCount + 1
     });
+
+    // Report to Sentry with additional context
+    Sentry.withScope((scope) => {
+      scope.setTag('errorBoundary', 'FastErrorBoundary');
+      scope.setTag('component', this.props.componentName || 'Unknown');
+      scope.setLevel('error');
+      scope.setContext('errorInfo', {
+        componentStack: errorInfo.componentStack,
+        retryCount: this.state.retryCount,
+        props: this.props
+      });
+      Sentry.captureException(error);
+    });
 // In development, provide more detailed error information
-    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
+    const isDevelopment = import.meta.env?.MODE === 'development' || 
+                         (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+    
+    if (isDevelopment) {
       console.group('Error Boundary Details');
       console.error('Error:', error);
       console.error('Error Info:', errorInfo);

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
+import * as Sentry from "@sentry/react";
 import { store } from "@/store/index";
 import { fetchNotificationCounts, resetCount, setError, setLoading, updateCounts } from "@/store/notificationSlice";
 import ApperIcon from "@/components/ApperIcon";
@@ -96,8 +97,22 @@ const AdminDashboard = () => {
         todayRevenue: todayRevenueAmount || 0
       });
 
-    } catch (error) {
+} catch (error) {
       console.error('Error loading dashboard data:', error);
+      
+      // Report error to Sentry with context
+      Sentry.withScope((scope) => {
+        scope.setTag('section', 'dashboard');
+        scope.setTag('operation', 'loadDashboardData');
+        scope.setLevel('error');
+        scope.setContext('dashboardState', {
+          loading,
+          hasStats: !!stats,
+          dataTypes: ['products', 'orders', 'wallet', 'revenue']
+        });
+        Sentry.captureException(error);
+      });
+      
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -200,11 +215,12 @@ const quickActions = [
     { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-amber-500 to-orange-500', notificationKey: 'analytics' }
   ];
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage your FreshMart store</p>
+return (
+    <Sentry.ErrorBoundary fallback={<Error message="Admin Dashboard encountered an error" />}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage your FreshMart store</p>
       </div>
 
       {/* Stats Cards */}
@@ -484,9 +500,9 @@ const quickActions = [
               <p className="text-sm text-green-600">Up to date</p>
             </div>
           </div>
-        </div>
+</div>
       </div>
-    </div>
+    </Sentry.ErrorBoundary>
   );
 };
 
